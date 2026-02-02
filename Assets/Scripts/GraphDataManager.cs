@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks; // <-- Added
 using Newtonsoft.Json;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -28,9 +29,37 @@ public class GraphDataManager : MonoBehaviour
         [JsonProperty("vertex_collections")]
         public List<string> VertexCollections;
     }
-
     [System.Serializable]
-    public class GraphData
+    public class FullGraphData
+    {
+        [JsonProperty("vertices")]
+        public List<NodeData> Vertices;
+        [JsonProperty("edges")]
+        public List<EdgeData> Edges;
+    }
+    [System.Serializable]
+    public class EdgeData
+    {
+        [JsonProperty("_from")]
+        public string From;
+        [JsonProperty("_id")]
+        public string Id;
+        [JsonProperty("_key")]
+        public string Key;
+        [JsonProperty("_rev")]
+        public string Rev;
+        [JsonProperty("_to")]
+        public string To;
+
+        [JsonProperty("_graph_id")]
+        public string GraphId;
+        [JsonProperty("_properties")]
+        public Dictionary<string, object> Propertieps;
+        [JsonProperty("_type")]
+        public string Type;
+    }
+    [System.Serializable]
+    public class NodeData
     {
         [JsonProperty("_id")]
         public string Id;
@@ -66,8 +95,9 @@ public class GraphDataManager : MonoBehaviour
         public Dictionary<string, object> Params;
     }
     // Events for visualization (or any other component) to subscribe to
+    public event Action<string, List<NodeData>, List<EdgeData>> OnFullGraphFetched;
     public event Action<List<InitialGraphData>> OnGraphsListed;
-    public event Action<string, List<GraphData>> OnPipelineNodesFetched; // graphId + nodes
+    public event Action<string, List<NodeData>> OnPipelineNodesFetched; // graphId + nodes
     public event Action<string, string> OnPipelineError; // graphId + error message
     private string apiBaseUrl = "http://localhost:8081";
     private const string API_VERSION = "api/v1";
@@ -215,60 +245,56 @@ public class GraphDataManager : MonoBehaviour
                 {
                     string json = request.downloadHandler.text;
 
-                    if (json == "null" || string.IsNullOrWhiteSpace(json))
+                    if (string.IsNullOrWhiteSpace(json))
                     {
                         Debug.LogWarning($"API returned null/empty response. Status: {request.responseCode}");
-                        Debug.LogWarning($"Response length: {json?.Length ?? 0}");
                         return;
                     }
 
                     Debug.Log($"Pipeline response length: {json.Length}");
-                    Debug.Log($"Pipeline response (first 500 chars): {json.Substring(0, Math.Min(500, json.Length))}");
+                    Debug.Log($"Pipeline response (first 500 chars): {json.Substring(0, Mathf.Min(500, json.Length))}");
 
-                    var graphData = JsonConvert.DeserializeObject<List<GraphData>>(json);
-                    if (graphData == null)
+                    // Detect if this is the new "subgraph" format (array with vertices + edges)
+                    if (pipeline.ReturnMode != null && pipeline.ReturnMode.Equals("subgraph", StringComparison.OrdinalIgnoreCase))
                     {
-                        graphData = new List<GraphData>();
+                        var fullResponse = JsonConvert.DeserializeObject<List<FullGraphData>>(json);
+
+                        if (fullResponse == null || fullResponse.Count == 0)
+                        {
+                            Debug.LogWarning("Subgraph response was empty or invalid");
+                            OnPipelineError?.Invoke(graphId, "Empty subgraph response");
+                            return;
+                        }
+
+                        var item = fullResponse[0]; // The API returns a single-item array
+                        var nodes = item.Vertices ?? new List<NodeData>();
+                        var edges = item.Edges ?? new List<EdgeData>();
+
+                        Debug.Log($"Successfully fetched subgraph: {nodes.Count} nodes, {edges.Count} edges");
+
+                        // Optional: keep printing nodes as before
+                        // foreach (var node in nodes) { ... your existing node printing ... }
+
+                        // Invoke the new event for visualization
+                        OnFullGraphFetched?.Invoke(graphId, nodes, edges);
                     }
-
-                    Debug.Log($"Successfully fetched {graphData.Count} nodes");
-
-                    foreach (var node in graphData)
+                    else
                     {
-                        Debug.Log("=== Node ===");
-                        Debug.Log($"_id: {node.Id ?? "null"}");
-                        Debug.Log($"_key: {node.Key ?? "null"}");
-                        Debug.Log($"_rev: {node.Rev ?? "null"}");
-                        Debug.Log($"graph_id: {node.GraphId ?? "null"}");
-                        Debug.Log($"label: {node.Label ?? "null"}");
-                        Debug.Log($"type: {node.Type ?? "null"}");
+                        // Fallback for old format (just list of nodes)
+                        var nodes = JsonConvert.DeserializeObject<List<NodeData>>(json);
+                        if (nodes == null) nodes = new List<NodeData>();
 
-                        Debug.Log("Properties:");
-                        if (node.Properties == null)
-                        {
-                            Debug.Log(" null");
-                        }
-                        else if (node.Properties.Count == 0)
-                        {
-                            Debug.Log(" (empty)");
-                        }
-                        else
-                        {
-                            foreach (var kvp in node.Properties)
-                            {
-                                string valueStr = kvp.Value?.ToString() ?? "null";
-                                Debug.Log($" {kvp.Key}: {valueStr}");
-                            }
-                        }
+                        Debug.Log($"Successfully fetched {nodes.Count} nodes (legacy mode)");
 
-                        Debug.Log("==============");
+                        // Your existing node printing loop here...
+
+                        OnPipelineNodesFetched?.Invoke(graphId, nodes); // if you still use this event
                     }
-                    OnPipelineNodesFetched?.Invoke(graphId, graphData);
                 }
                 catch (Exception e)
                 {
                     Debug.LogError($"Error parsing pipeline result: {e.Message}\n{e.StackTrace}");
-                    OnPipelineError?.Invoke(graphId, request.error ?? "Unknown error");
+                    OnPipelineError?.Invoke(graphId, e.Message);
                 }
             }
         }

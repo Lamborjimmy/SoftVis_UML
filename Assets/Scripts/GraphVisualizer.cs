@@ -4,131 +4,80 @@ using System.Collections.Generic;
 public class GraphVisualizer : MonoBehaviour
 {
     private GraphDataManager graphManager;
-    private List<GraphDataManager.InitialGraphData> availableGraphs = new List<GraphDataManager.InitialGraphData>();
+
+    // Runtime storage for node GameObjects (keyed by node _key)
+    private Dictionary<string, GameObject> nodeObjects = new Dictionary<string, GameObject>();
+
+    // Parent objects for organization
+    private GameObject nodesParent;
+    private GameObject edgesParent;
 
     void Start()
     {
-        // Add and configure your existing GraphDataManager
         graphManager = gameObject.AddComponent<GraphDataManager>();
 
-        // Subscribe to events
-        graphManager.OnGraphsListed += OnGraphsListed;
-        graphManager.OnPipelineNodesFetched += VisualizeNodes;
-        graphManager.OnPipelineError += OnPipelineError;
+        // Subscribe to the new full-graph event
+        graphManager.OnFullGraphFetched += VisualizeFullGraph;
+        graphManager.OnPipelineError += (id, err) => Debug.LogError($"Graph {id} error: {err}");
 
-        // Option 1: Directly fetch a known graph ID (your current approach)
-        FetchSpecificGraph("2f367328-91bb-44ec-99ff-8b3dfcbd47ce");
-
-        // Option 2: Uncomment below to auto-find and visualize the first non-empty graph
-        // FindAndVisualizeFirstValidGraph();
+        // Example: fetch a graph with subgraph mode (which now returns edges)
+        FetchGraphWithEdges("2f367328-91bb-44ec-99ff-8b3dfcbd47ce"); // use your graph ID
     }
 
-    void FetchSpecificGraph(string graphId)
+    void FetchGraphWithEdges(string graphId)
     {
-        Debug.Log($"🔄 Fetching nodes for specific graph: {graphId}");
+        Debug.Log($"🔄 Fetching full graph (nodes + edges) for: {graphId}");
 
+        var steps = new List<GraphDataManager.PipelineStep>
+        {
+            new GraphDataManager.PipelineStep
+            {
+                Type = "collect_subgraph",
+                Params = null
+            }
+        };
         var pipeline = new GraphDataManager.PipelineDefinition
         {
-            ReturnMode = "subgraph", // Keep your setting (works even if only nodes returned)
-            Steps = new List<GraphDataManager.PipelineStep>()
+            ReturnMode = "subgraph",
+            Steps = steps
         };
 
         graphManager.RunPipeline(graphId, pipeline);
     }
 
-    void FindAndVisualizeFirstValidGraph()
+    void VisualizeFullGraph(string graphId, List<GraphDataManager.NodeData> nodes, List<GraphDataManager.EdgeData> edges)
     {
-        Debug.Log("🔍 Finding a graph with actual nodes...");
-        graphManager.ListGraphs(); // This will trigger OnGraphsListed
-    }
+        Debug.Log($"\n🎨 === VISUALIZING FULL GRAPH (ID: {graphId}) ===");
+        Debug.Log($"📊 Nodes: {nodes.Count} | Edges: {edges.Count}");
 
-    void OnGraphsListed(List<GraphDataManager.InitialGraphData> graphs)
-    {
-        availableGraphs = graphs;
-        Debug.Log($"📊 Found {graphs.Count} graphs total");
-
-        if (graphs.Count == 0)
-        {
-            Debug.LogError("❌ No graphs available");
-            return;
-        }
-
-        // Try graphs one by one until we find one with nodes
-        TryNextGraph(0);
-    }
-
-    void TryNextGraph(int index)
-    {
-        if (index >= availableGraphs.Count)
-        {
-            Debug.LogError("❌ No graph with nodes found");
-            return;
-        }
-
-        var graph = availableGraphs[index];
-        Debug.Log($"🔄 Checking graph [{index}]: {graph.Name ?? "Unnamed"} (ID: {graph.Key})");
-
-        var pipeline = new GraphDataManager.PipelineDefinition
-        {
-            Steps = new List<GraphDataManager.PipelineStep>()
-        };
-
-        // Temporary subscription for this specific check
-        void OnCheckFetched(string fetchedGraphId, List<GraphDataManager.GraphData> nodes)
-        {
-            if (fetchedGraphId != graph.Key) return;
-
-            graphManager.OnPipelineNodesFetched -= OnCheckFetched; // Unsubscribe
-
-            if (nodes != null && nodes.Count > 0)
-            {
-                Debug.Log($"✅ Found valid graph: {graph.Name ?? graph.Key} ({nodes.Count} nodes)");
-                // Visualize it (re-use the same method)
-                VisualizeNodes(graph.Key, nodes);
-            }
-            else
-            {
-                Debug.Log($"⚠️ Graph empty, trying next...");
-                TryNextGraph(index + 1);
-            }
-        }
-
-        graphManager.OnPipelineNodesFetched += OnCheckFetched;
-        graphManager.RunPipeline(graph.Key, pipeline);
-    }
-
-    void OnPipelineError(string graphId, string error)
-    {
-        Debug.LogError($"❌ Pipeline error for graph {graphId}: {error}");
-    }
-
-    void VisualizeNodes(string graphId, List<GraphDataManager.GraphData> nodes)
-    {
-        string graphName = graphId; // Fallback
-        var metadata = availableGraphs.Find(g => g.Key == graphId);
-        if (metadata != null) graphName = metadata.Name ?? graphId;
-
-        Debug.Log($"\n🎨 === VISUALIZING GRAPH: {graphName} (ID: {graphId}) ===");
-        Debug.Log($"📊 Total Nodes: {nodes?.Count ?? 0}");
-
-        if (nodes == null || nodes.Count == 0)
+        if (nodes.Count == 0)
         {
             Debug.LogWarning("⚠️ No nodes to visualize");
             return;
         }
 
+        // Clear previous visualization
+        ClearVisualization();
 
-        int createdCount = 0;
+        // Create parent objects
+        nodesParent = new GameObject("Nodes");
+        edgesParent = new GameObject("Edges");
+
+        // === Create nodes ===
         foreach (var node in nodes)
         {
             GameObject nodeObj = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             nodeObj.name = node.Label ?? node.Key;
+            nodeObj.transform.parent = nodesParent.transform;
 
-            // Random layout in a sphere
-            Vector3 position = Random.insideUnitSphere * 10f;
+            // Simple circle layout for better visibility (instead of pure random)
+            float angle = (float)nodes.IndexOf(node) / nodes.Count * Mathf.PI * 2f;
+            Vector3 position = new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0f) * 8f;
+            // Add small random offset to avoid perfect overlap
+            position += Random.insideUnitSphere * 1.5f;
             nodeObj.transform.position = position;
 
-            nodeObj.transform.localScale = Vector3.one * 0.5f;
+            nodeObj.transform.localScale = Vector3.one * 0.6f;
 
             var renderer = nodeObj.GetComponent<Renderer>();
             if (renderer != null)
@@ -136,20 +85,53 @@ public class GraphVisualizer : MonoBehaviour
                 renderer.material.color = GetColorForNodeType(node.Type);
             }
 
-            createdCount++;
+            // Store for edge drawing
+            nodeObjects[node.Key] = nodeObj;
+        }
 
-            if (createdCount <= 10) // Log first few
+        // === Draw edges ===
+        int drawnEdges = 0;
+        foreach (var edge in edges)
+        {
+            string fromKey = ExtractKeyFromId(edge.From);
+            string toKey = ExtractKeyFromId(edge.To);
+
+            if (nodeObjects.TryGetValue(fromKey, out GameObject fromObj) &&
+                nodeObjects.TryGetValue(toKey, out GameObject toObj))
             {
-                Debug.Log($" [{createdCount}] {node.Label ?? node.Key} (Type: {node.Type})");
+                // Create a line using LineRenderer
+                GameObject edgeObj = new GameObject($"Edge_{edge.Key}");
+                edgeObj.transform.parent = edgesParent.transform;
+
+                LineRenderer lr = edgeObj.AddComponent<LineRenderer>();
+                lr.positionCount = 2;
+                lr.SetPosition(0, fromObj.transform.position);
+                lr.SetPosition(1, toObj.transform.position);
+                lr.startWidth = 0.05f;
+                lr.endWidth = 0.05f;
+                lr.material = new Material(Shader.Find("Unlit/Color"));
+                lr.material.color = GetColorForEdgeType(edge.Type);
+
+                drawnEdges++;
             }
         }
 
-        if (nodes.Count > 10)
-        {
-            Debug.Log($" ... and {nodes.Count - 10} more nodes");
-        }
+        Debug.Log($"✅ Visualization complete: {nodes.Count} nodes, {drawnEdges} edges drawn");
+    }
 
-        Debug.Log("✅ Node visualization complete!");
+    void ClearVisualization()
+    {
+        nodeObjects.Clear();
+
+        if (nodesParent != null) Destroy(nodesParent);
+        if (edgesParent != null) Destroy(edgesParent);
+    }
+
+    string ExtractKeyFromId(string id)
+    {
+        if (string.IsNullOrEmpty(id)) return "";
+        int slashIndex = id.LastIndexOf('/');
+        return slashIndex >= 0 ? id.Substring(slashIndex + 1) : id;
     }
 
     Color GetColorForNodeType(string nodeType)
@@ -161,9 +143,19 @@ public class GraphVisualizer : MonoBehaviour
             "DIAGRAM" => Color.magenta,
             "UML_LIFELINE" => Color.cyan,
             "UML_CLASS" => Color.yellow,
-            "UML_ACTOR" => new Color(1f, 0.5f, 0f), // Orange
-            "UML_USECASE" => new Color(0.5f, 0.5f, 1f), // Light blue
             _ => Color.gray
+        };
+    }
+
+    Color GetColorForEdgeType(string edgeType)
+    {
+        if (string.IsNullOrEmpty(edgeType)) return Color.white;
+
+        return edgeType.ToUpper() switch
+        {
+            "NESTED" => Color.green,
+            "MESSAGES" => Color.blue,
+            _ => Color.white
         };
     }
 }

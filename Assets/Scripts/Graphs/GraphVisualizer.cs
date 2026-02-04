@@ -19,9 +19,7 @@ namespace Assets.Scripts.Graphs
             graphManager.OnFullGraphFetched += VisualizeFullGraph;
             graphManager.OnPipelineError += (id, err) => Debug.LogError($"Graph {id} error: {err}");
 
-            // Example: fetch a graph with subgraph mode (which now returns edges)
-            //FetchGraphWithEdges("2f367328-91bb-44ec-99ff-8b3dfcbd47ce"); // use your graph ID
-            graphManager.ListGraphs(true);
+            FetchGraphWithEdges("15bbceae-dd7d-40d9-adc1-69155ef8ad59");
         }
 
         void FetchGraphWithEdges(string graphId)
@@ -71,9 +69,8 @@ namespace Assets.Scripts.Graphs
 
                 // Simple circle layout for better visibility (instead of pure random)
                 float angle = (float)nodes.IndexOf(node) / nodes.Count * Mathf.PI * 2f;
-                Vector3 position = new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0f) * 8f;
+                Vector3 position = node.GetNodePosition();
                 // Add small random offset to avoid perfect overlap
-                position += Random.insideUnitSphere * 1.5f;
                 nodeObj.transform.position = position;
 
                 nodeObj.transform.localScale = Vector3.one * 0.6f;

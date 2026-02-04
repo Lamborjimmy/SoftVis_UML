@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using UnityEngine;
 
 namespace Assets.Scripts.Data
 {
@@ -70,6 +72,22 @@ namespace Assets.Scripts.Data
         public Dictionary<string, object> Properties;
         [JsonProperty("type")]
         public string Type;
+        public Vector3 GetNodePosition()
+        {
+            if (Properties != null && Properties.ContainsKey("position"))
+            {
+                var posObj = Properties["position"] as JObject;
+                if (posObj != null)
+                {
+                    return new Vector3(
+                        posObj.Value<float>("x"),
+                        posObj.Value<float>("y"),
+                        posObj.Value<float>("z")
+                    );
+                }
+            }
+            return Vector3.zero;
+        }
     }
     [Serializable]
     public class Pipeline

@@ -26,6 +26,27 @@ namespace Assets.Scripts.Graphs
         {
             _ = RunDefinedPipelineAsync(graphId, pipeline);
         }
+        public void FetchFullGraph(string graphId)
+        {
+            Debug.Log($"🔄 Requesting full graph data for: {graphId}");
+
+            var steps = new List<PipelineStep>
+            {
+                new PipelineStep
+                {
+                    Type = PipelineStepTypes.COLLECT_SUBGRAPH,
+                    Params = null
+                }
+            };
+            var pipeline = new Pipeline
+            {
+                ReturnMode = PipelineReturnModes.SUBGRAPH,
+                Steps = steps
+            };
+
+            // Re-use your existing generic pipeline runner
+            RunPipeline(graphId, pipeline);
+        }
         #endregion
 
         #region Private Async Methods
@@ -56,24 +77,9 @@ namespace Assets.Scripts.Graphs
                         foreach (var graph in graphs)
                         {
                             Debug.Log("=== Graph ===");
-                            Debug.Log($"_id: {graph.Id ?? "null"}");
                             Debug.Log($"_key: {graph.Key ?? "null"}");
-                            Debug.Log($"_rev: {graph.Rev ?? "null"}");
-                            Debug.Log($"arangodb_graph: {graph.ArrangoDB_Graph ?? "null"}");
-
-                            string edgeCollectionsStr = graph.EdgeCollections == null
-                                ? "null"
-                                : (graph.EdgeCollections.Count == 0 ? "(empty)" : string.Join(", ", graph.EdgeCollections));
-                            Debug.Log($"edge_collections: {edgeCollectionsStr}");
-
                             Debug.Log($"name: {graph.Name ?? "null"}");
                             Debug.Log($"updated_at: {graph.UpdatedAt ?? "null"}");
-
-                            string vertexCollectionsStr = graph.VertexCollections == null
-                                ? "null"
-                                : (graph.VertexCollections.Count == 0 ? "(empty)" : string.Join(", ", graph.VertexCollections));
-                            Debug.Log($"vertex_collections: {vertexCollectionsStr}");
-
                             Debug.Log("==============");
                         }
                         OnGraphsListed?.Invoke(graphs);

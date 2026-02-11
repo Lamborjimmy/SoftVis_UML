@@ -6,42 +6,25 @@ namespace Assets.Scripts.Graphs
 {
     public class GraphVisualizer : MonoBehaviour
     {
-        private GraphDataManager graphManager;
+        [SerializeField] private GraphDataManager graphManager;
         private Dictionary<string, GameObject> nodeObjects = new Dictionary<string, GameObject>();
         private GameObject nodesParent;
         private GameObject edgesParent;
 
-        void Start()
+        void OnEnable()
         {
-            graphManager = gameObject.AddComponent<GraphDataManager>();
-
-            // Subscribe to the new full-graph event
-            graphManager.OnFullGraphFetched += VisualizeFullGraph;
-            graphManager.OnPipelineError += (id, err) => Debug.LogError($"Graph {id} error: {err}");
-
-            FetchGraphWithEdges("15bbceae-dd7d-40d9-adc1-69155ef8ad59");
+            if (graphManager != null)
+            {
+                graphManager.OnFullGraphFetched += VisualizeFullGraph;
+            }
         }
-
-        void FetchGraphWithEdges(string graphId)
+        void OnDisable()
         {
-            Debug.Log($"🔄 Fetching full graph (nodes + edges) for: {graphId}");
-
-            var steps = new List<PipelineStep>
+            if (graphManager != null)
             {
-                new PipelineStep
-                {
-                    Type = PipelineStepTypes.COLLECT_SUBGRAPH,
-                    Params = null
-                }
-            };
-            var pipeline = new Pipeline
-            {
-                ReturnMode = PipelineReturnModes.SUBGRAPH,
-                Steps = steps
-            };
-            graphManager.RunPipeline(graphId, pipeline);
+                graphManager.OnFullGraphFetched -= VisualizeFullGraph;
+            }
         }
-
         void VisualizeFullGraph(string graphId, List<NodeData> nodes, List<EdgeData> edges)
         {
             Debug.Log($"\n🎨 === VISUALIZING FULL GRAPH (ID: {graphId}) ===");

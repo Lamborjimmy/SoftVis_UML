@@ -9,22 +9,12 @@ namespace Assets.Scripts.Data
     [Serializable]
     public class GraphMetadata
     {
-        [JsonProperty("_id")]
-        public string Id;
         [JsonProperty("_key")]
         public string Key;
-        [JsonProperty("_rev")]
-        public string Rev;
-        [JsonProperty("arangodb_graph")]
-        public string ArrangoDB_Graph;
-        [JsonProperty("edge_collections")]
-        public List<string> EdgeCollections;
         [JsonProperty("name")]
         public string Name;
         [JsonProperty("updated_at")]
         public string UpdatedAt;
-        [JsonProperty("vertex_collections")]
-        public List<string> VertexCollections;
     }
     [Serializable]
     public class NodesAndEdgesData

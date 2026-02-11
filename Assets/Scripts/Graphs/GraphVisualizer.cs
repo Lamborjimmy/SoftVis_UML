@@ -7,9 +7,12 @@ namespace Assets.Scripts.Graphs
     public class GraphVisualizer : MonoBehaviour
     {
         [SerializeField] private GraphDataManager graphManager;
+        [SerializeField] private float verticalSpacing;
+        private int graphStackCount;
         private Dictionary<string, GameObject> nodeObjects = new Dictionary<string, GameObject>();
         private GameObject nodesParent;
         private GameObject edgesParent;
+        private List<GameObject> graphContainers = new List<GameObject>();
 
         void OnEnable()
         {
@@ -27,58 +30,47 @@ namespace Assets.Scripts.Graphs
         }
         void VisualizeFullGraph(string graphId, List<NodeData> nodes, List<EdgeData> edges)
         {
-            Debug.Log($"\n🎨 === VISUALIZING FULL GRAPH (ID: {graphId}) ===");
-            Debug.Log($"📊 Nodes: {nodes.Count} | Edges: {edges.Count}");
+            if (nodes.Count == 0) return;
 
-            if (nodes.Count == 0)
-            {
-                Debug.LogWarning("⚠️ No nodes to visualize");
-                return;
-            }
+            float currentYOffset = graphStackCount * verticalSpacing;
 
-            // Clear previous visualization
-            ClearVisualization();
+            GameObject graphRoot = new GameObject($"Graph_{graphId}_{graphStackCount}");
+            graphContainers.Add(graphRoot);
 
-            // Create parent objects
-            nodesParent = new GameObject("Nodes");
-            edgesParent = new GameObject("Edges");
+            GameObject nodesParent = new GameObject("Nodes");
+            nodesParent.transform.parent = graphRoot.transform;
 
-            // === Create nodes ===
+            GameObject edgesParent = new GameObject("Edges");
+            edgesParent.transform.parent = graphRoot.transform;
+
+            Dictionary<string, GameObject> localNodeObjects = new Dictionary<string, GameObject>();
+
             foreach (var node in nodes)
             {
                 GameObject nodeObj = GameObject.CreatePrimitive(PrimitiveType.Sphere);
                 nodeObj.name = node.Label ?? node.Key;
                 nodeObj.transform.parent = nodesParent.transform;
 
-                // Simple circle layout for better visibility (instead of pure random)
-                float angle = (float)nodes.IndexOf(node) / nodes.Count * Mathf.PI * 2f;
-                Vector3 position = node.GetNodePosition();
-                // Add small random offset to avoid perfect overlap
-                nodeObj.transform.position = position;
+                Vector3 basePos = node.GetNodePosition();
+                nodeObj.transform.position = new Vector3(basePos.x, basePos.y + currentYOffset, basePos.z);
 
                 nodeObj.transform.localScale = Vector3.one * 0.6f;
 
                 var renderer = nodeObj.GetComponent<Renderer>();
                 if (renderer != null)
-                {
                     renderer.material.color = GetColorForNodeType(node.Type);
-                }
 
-                // Store for edge drawing
-                nodeObjects[node.Key] = nodeObj;
+                localNodeObjects[node.Key] = nodeObj;
             }
 
-            // === Draw edges ===
-            int drawnEdges = 0;
             foreach (var edge in edges)
             {
                 string fromKey = ExtractKeyFromId(edge.From);
                 string toKey = ExtractKeyFromId(edge.To);
 
-                if (nodeObjects.TryGetValue(fromKey, out GameObject fromObj) &&
-                    nodeObjects.TryGetValue(toKey, out GameObject toObj))
+                if (localNodeObjects.TryGetValue(fromKey, out GameObject fromObj) &&
+                    localNodeObjects.TryGetValue(toKey, out GameObject toObj))
                 {
-                    // Create a line using LineRenderer
                     GameObject edgeObj = new GameObject($"Edge_{edge.Key}");
                     edgeObj.transform.parent = edgesParent.transform;
 
@@ -90,12 +82,11 @@ namespace Assets.Scripts.Graphs
                     lr.endWidth = 0.05f;
                     lr.material = new Material(Shader.Find("Unlit/Color"));
                     lr.material.color = GetColorForEdgeType(edge.Type);
-
-                    drawnEdges++;
                 }
             }
 
-            Debug.Log($"✅ Visualization complete: {nodes.Count} nodes, {drawnEdges} edges drawn");
+            graphStackCount++;
+            Debug.Log($"✅ Stacked graph {graphId} at Height: {currentYOffset}");
         }
 
         void ClearVisualization()

@@ -673,6 +673,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GraphVisualizer
   graphManager: {fileID: 1547673504}
+  verticalSpacing: 10
 --- !u!114 &898069694
 MonoBehaviour:
   m_ObjectHideFlags: 0

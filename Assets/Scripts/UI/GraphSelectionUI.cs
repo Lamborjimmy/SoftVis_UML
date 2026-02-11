@@ -17,7 +17,7 @@ public class GraphSelectionUI : MonoBehaviour
         graphDataManager.OnGraphsListed += HandleGraphsListed;
         graphDataManager.ListGraphs(false);
     }
-    private void ODestroy()
+    private void OnDestroy()
     {
         graphDataManager.OnGraphsListed -= HandleGraphsListed;
     }

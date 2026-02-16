@@ -38,11 +38,11 @@ namespace Assets.Scripts.Data
         [JsonProperty("_to")]
         public string To;
 
-        [JsonProperty("_graph_id")]
+        [JsonProperty("graph_id")]
         public string GraphId;
-        [JsonProperty("_properties")]
+        [JsonProperty("properties")]
         public Dictionary<string, object> Propertieps;
-        [JsonProperty("_type")]
+        [JsonProperty("type")]
         public string Type;
     }
     [Serializable]

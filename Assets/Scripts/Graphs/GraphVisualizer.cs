@@ -12,7 +12,7 @@ namespace Assets.Scripts.Graphs
         private Dictionary<string, GameObject> nodeObjects = new Dictionary<string, GameObject>();
         private GameObject nodesParent;
         private GameObject edgesParent;
-        private List<GameObject> graphContainers = new List<GameObject>();
+        private Dictionary<string, GameObject> graphContainers = new Dictionary<string, GameObject>();
 
         void OnEnable()
         {
@@ -34,8 +34,8 @@ namespace Assets.Scripts.Graphs
 
             float currentYOffset = graphStackCount * verticalSpacing;
 
-            GameObject graphRoot = new GameObject($"Graph_{graphId}_{graphStackCount}");
-            graphContainers.Add(graphRoot);
+            GameObject graphRoot = new GameObject($"Graph_{graphId}");
+            graphContainers[graphId] = graphRoot;
 
             GameObject nodesParent = new GameObject("Nodes");
             nodesParent.transform.parent = graphRoot.transform;
@@ -88,7 +88,16 @@ namespace Assets.Scripts.Graphs
             graphStackCount++;
             Debug.Log($"✅ Stacked graph {graphId} at Height: {currentYOffset}");
         }
+        public void RemoveGraph(string graphId)
+        {
+            if (graphContainers.TryGetValue(graphId, out GameObject root))
+            {
+                Destroy(root);
+                graphContainers.Remove(graphId);
 
+                graphStackCount--;
+            }
+        }
         void ClearVisualization()
         {
             nodeObjects.Clear();
@@ -96,7 +105,6 @@ namespace Assets.Scripts.Graphs
             if (nodesParent != null) Destroy(nodesParent);
             if (edgesParent != null) Destroy(edgesParent);
         }
-
         string ExtractKeyFromId(string id)
         {
             if (string.IsNullOrEmpty(id)) return "";

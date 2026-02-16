@@ -689,6 +689,7 @@ MonoBehaviour:
   graphListElementPrefab: {fileID: 2390519832079135323, guid: 33bc1c572c6434d8b89821dbbda956e8, type: 3}
   graphListElementParent: {fileID: 228625536}
   graphDataManager: {fileID: 1547673504}
+  graphVisualizer: {fileID: 898069693}
 --- !u!1 &1011499383
 GameObject:
   m_ObjectHideFlags: 0

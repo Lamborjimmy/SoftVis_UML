@@ -13,36 +13,46 @@ public class GraphSelectionUI : MonoBehaviour
     [SerializeField] private GraphDataManager graphDataManager;
     private GraphVisualizer graphVisualizer;
     private List<string> visualizedGraphIds = new List<string>();
+    private Dictionary<string, TextMeshProUGUI> uiLabels = new Dictionary<string, TextMeshProUGUI>();
     private void Start()
     {
         graphDataManager.OnGraphsListed += HandleGraphsListed;
-        graphDataManager.ListGraphs(false);
+        graphDataManager.OnGraphTypeSet += HandleGraphTypeSet;
+        graphDataManager.ListGraphs();
+
         graphVisualizer = GetComponent<GraphVisualizer>();
     }
     private void OnDestroy()
     {
         graphDataManager.OnGraphsListed -= HandleGraphsListed;
     }
-
+    private void HandleGraphTypeSet(GraphMetadata graph)
+    {
+        if (uiLabels.TryGetValue(graph.Key, out TextMeshProUGUI label))
+            label.text = $"ID: {graph.Key} ({graph.GraphType})";
+    }
     private void HandleGraphsListed(List<GraphMetadata> graphs)
     {
         foreach (var g in graphs)
         {
             GameObject obj = Instantiate(graphListElementPrefab, graphListElementParent);
             var buttonComponent = obj.GetComponentInChildren<Button>();
-            var textComponent = buttonComponent.GetComponentInChildren<TextMeshProUGUI>();
+            var textComponent = obj.GetComponentInChildren<TextMeshProUGUI>();
+            textComponent.text = $"ID: {g.Key}";
+            uiLabels[g.Key] = textComponent;
+            var buttonTextComponent = buttonComponent.GetComponentInChildren<TextMeshProUGUI>();
             var buttonImage = buttonComponent.GetComponent<Image>();
-
             buttonComponent.onClick.AddListener(() =>
-                HandleButtonClick(g.Key, textComponent, buttonImage));
+                HandleButtonClick(g, buttonTextComponent, buttonImage));
         }
     }
-    private void HandleButtonClick(string key, TextMeshProUGUI btnText, Image btnImage)
+    private void HandleButtonClick(GraphMetadata graph, TextMeshProUGUI btnText, Image btnImage)
     {
+        string key = graph.Key;
         if (!visualizedGraphIds.Contains(key))
         {
             visualizedGraphIds.Add(key);
-            graphDataManager.FetchFullGraph(key);
+            graphDataManager.FetchFullGraph(graph);
 
             btnText.text = "Remove";
             btnImage.color = Color.red;

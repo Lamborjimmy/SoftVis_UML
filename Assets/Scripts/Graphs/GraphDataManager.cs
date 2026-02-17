@@ -11,24 +11,24 @@ namespace Assets.Scripts.Graphs
 
     public class GraphDataManager : MonoBehaviour
     {
-        // Events for visualization (or any other component) to subscribe to
         public event Action<string, List<NodeData>, List<EdgeData>> OnFullGraphFetched;
         public event Action<List<GraphMetadata>> OnGraphsListed;
         public event Action<string, string> OnPipelineError;
+        public event Action<GraphMetadata> OnGraphTypeSet;
 
         #region Public Methods
-        public void ListGraphs(bool shouldRunPipeline)
+        public void ListGraphs()
         {
-            _ = ListGraphsAsync(shouldRunPipeline);
+            _ = ListGraphsAsync();
         }
 
-        public void RunPipeline(string graphId, Pipeline pipeline)
+        public void RunPipeline(GraphMetadata graph, Pipeline pipeline)
         {
-            _ = RunDefinedPipelineAsync(graphId, pipeline);
+            _ = RunDefinedPipelineAsync(graph, pipeline);
         }
-        public void FetchFullGraph(string graphId)
+        public void FetchFullGraph(GraphMetadata graph)
         {
-            Debug.Log($"🔄 Requesting full graph data for: {graphId}");
+            Debug.Log($"🔄 Requesting full graph data for: {graph.Key}");
 
             var steps = new List<PipelineStep>
             {
@@ -45,12 +45,38 @@ namespace Assets.Scripts.Graphs
             };
 
             // Re-use your existing generic pipeline runner
-            RunPipeline(graphId, pipeline);
+            RunPipeline(graph, pipeline);
         }
+        #endregion
+        #region Private Methods
+        private void FetchDiagramTypeOnly(GraphMetadata graph)
+        {
+            Debug.Log($"🔄 Fetching diagram type only for graph: {graph.Key}");
+
+            var pipeline = new Pipeline
+            {
+                ReturnMode = PipelineReturnModes.VERTICES,
+                Steps = new List<PipelineStep>
+                {
+                    new PipelineStep
+                    {
+                        Type = PipelineStepTypes.LIMIT,
+                        Params = new Dictionary<string, object>
+                        {
+                            { "count", 1 },
+                            { "offset", 0 }
+                        }
+                    }
+                }
+            };
+
+            _ = RunDiagramTypePipelineAsync(graph, pipeline);
+        }
+
         #endregion
 
         #region Private Async Methods
-        private async Task ListGraphsAsync(bool shouldRunPipeline)
+        private async Task ListGraphsAsync()
         {
             string url = $"{APIDefinitions.API_BASE_URL}/{APIDefinitions.API_VERSION}/graphs";
             Debug.Log($"Getting graphs from {url}");
@@ -81,10 +107,9 @@ namespace Assets.Scripts.Graphs
                             Debug.Log($"name: {graph.Name ?? "null"}");
                             Debug.Log($"updated_at: {graph.UpdatedAt ?? "null"}");
                             Debug.Log("==============");
+                            FetchDiagramTypeOnly(graph);
                         }
                         OnGraphsListed?.Invoke(graphs);
-                        if (graphs.Count > 0 && shouldRunPipeline)
-                            _ = RunPipelineOnAllGraphsAsync(graphs);
                     }
                     catch (Exception e)
                     {
@@ -94,37 +119,9 @@ namespace Assets.Scripts.Graphs
             }
         }
 
-        private async Task RunPipelineOnAllGraphsAsync(List<GraphMetadata> graphs)
+        private async Task RunDefinedPipelineAsync(GraphMetadata graph, Pipeline pipeline)
         {
-            Debug.Log($"Starting to run default pipeline on {graphs.Count} graphs...");
-
-            foreach (var graph in graphs)
-            {
-                string graphId = graph.Key;
-
-                if (string.IsNullOrEmpty(graphId))
-                {
-                    Debug.LogWarning($"Skipping graph with null/empty _key");
-                    continue;
-                }
-
-                Debug.Log($"Running default pipeline on graph: {graph.Name ?? "Unnamed"} (ID: {graphId})");
-
-                var pipeline = new Pipeline
-                {
-                    Steps = new List<PipelineStep>()
-                };
-
-                await RunDefinedPipelineAsync(graphId, pipeline);
-
-                await Task.Delay(500);
-            }
-
-            Debug.Log("Finished running pipeline on all graphs.");
-        }
-
-        private async Task RunDefinedPipelineAsync(string graphId, Pipeline pipeline)
-        {
+            string graphId = graph.Key;
             string url = $"{APIDefinitions.API_BASE_URL}/{APIDefinitions.API_VERSION}/graphs/{graphId}/pipeline";
             Debug.Log($"Running pipeline on graph '{graphId}': {url}");
 
@@ -183,6 +180,7 @@ namespace Assets.Scripts.Graphs
                             var nodes = item.Vertices ?? new List<NodeData>();
                             var edges = item.Edges ?? new List<EdgeData>();
 
+
                             Debug.Log($"Successfully fetched subgraph: {nodes.Count} nodes, {edges.Count} edges");
                             OnFullGraphFetched?.Invoke(graphId, nodes, edges);
                         }
@@ -192,6 +190,74 @@ namespace Assets.Scripts.Graphs
                         Debug.LogError($"Error parsing pipeline result: {e.Message}\n{e.StackTrace}");
                         OnPipelineError?.Invoke(graphId, e.Message);
                     }
+                }
+            }
+        }
+        private async Task RunDiagramTypePipelineAsync(GraphMetadata graph, Pipeline pipeline)
+        {
+            string graphId = graph.Key;
+            string url = $"{APIDefinitions.API_BASE_URL}/{APIDefinitions.API_VERSION}/graphs/{graphId}/pipeline";
+
+            Debug.Log($"Running minimal pipeline (first vertex only) on '{graphId}': {url}");
+
+            string pipelineJson = JsonConvert.SerializeObject(pipeline, Formatting.Indented);
+            Debug.Log($"Pipeline: {pipelineJson}");
+
+            byte[] bodyRaw = Encoding.UTF8.GetBytes(pipelineJson);
+
+            using (UnityWebRequest request = new UnityWebRequest(url, "POST"))
+            {
+                request.uploadHandler = new UploadHandlerRaw(bodyRaw);
+                request.downloadHandler = new DownloadHandlerBuffer();
+                request.SetRequestHeader("Content-Type", "application/json");
+
+                await request.SendWebRequest();
+
+                if (request.result == UnityWebRequest.Result.ConnectionError ||
+                    request.result == UnityWebRequest.Result.ProtocolError)
+                {
+                    Debug.LogError($"HTTP {request.responseCode}: {request.error}");
+                    OnPipelineError?.Invoke(graphId, request.error ?? "Unknown error");
+                    return;
+                }
+
+                try
+                {
+                    string json = request.downloadHandler.text;
+                    if (string.IsNullOrWhiteSpace(json))
+                    {
+                        Debug.LogWarning($"API returned null/empty response for diagram type. Status: {request.responseCode}");
+                        return;
+                    }
+
+                    var vertices = JsonConvert.DeserializeObject<List<NodeData>>(json);
+                    if (vertices == null || vertices.Count == 0)
+                    {
+                        Debug.LogWarning($"No vertices returned for graph {graphId} - cannot determine diagram type");
+                        return;
+                    }
+
+                    var firstNode = vertices[0];
+
+                    if (firstNode.Properties != null &&
+                        firstNode.Properties.TryGetValue("diagram_type", out var diagramTypeObj) &&
+                        diagramTypeObj != null)
+                    {
+                        string diagramType = diagramTypeObj.ToString();
+                        Debug.Log($"Diagram type found: {diagramType}");
+
+                        graph.GraphType = diagramType;
+                        OnGraphTypeSet?.Invoke(graph);
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"First node has no 'diagram_type' property in graph {graphId}");
+                    }
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError($"Error parsing diagram type result for {graphId}: {e.Message}\n{e.StackTrace}");
+                    OnPipelineError?.Invoke(graphId, e.Message);
                 }
             }
         }

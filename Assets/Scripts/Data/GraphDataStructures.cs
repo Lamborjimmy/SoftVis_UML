@@ -15,6 +15,7 @@ namespace Assets.Scripts.Data
         public string Name;
         [JsonProperty("updated_at")]
         public string UpdatedAt;
+        public string GraphType;
     }
     [Serializable]
     public class NodesAndEdgesData

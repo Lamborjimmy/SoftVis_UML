@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using Assets.Scripts.Data;
+using Unity.VisualScripting;
 
 namespace Assets.Scripts.Graphs
 {
@@ -8,12 +9,8 @@ namespace Assets.Scripts.Graphs
     {
         [SerializeField] private GraphDataManager graphManager;
         [SerializeField] private float verticalSpacing;
-        private int graphStackCount;
-        private Dictionary<string, GameObject> nodeObjects = new Dictionary<string, GameObject>();
-        private GameObject nodesParent;
-        private GameObject edgesParent;
         private Dictionary<string, GameObject> graphContainers = new Dictionary<string, GameObject>();
-
+        private List<string> stackOrder = new List<string>();
         void OnEnable()
         {
             if (graphManager != null)
@@ -32,13 +29,15 @@ namespace Assets.Scripts.Graphs
         {
             if (nodes.Count == 0) return;
 
-            float currentYOffset = graphStackCount * verticalSpacing;
+            stackOrder.Add(graphId);
 
+            float currentYOffset = (stackOrder.Count - 1) * verticalSpacing;
             GameObject graphRoot = new GameObject($"Graph_{graphId}");
             graphContainers[graphId] = graphRoot;
 
             GameObject nodesParent = new GameObject("Nodes");
             nodesParent.transform.parent = graphRoot.transform;
+
 
             GameObject edgesParent = new GameObject("Edges");
             edgesParent.transform.parent = graphRoot.transform;
@@ -52,7 +51,7 @@ namespace Assets.Scripts.Graphs
                 nodeObj.transform.parent = nodesParent.transform;
 
                 Vector3 basePos = node.GetNodePosition();
-                nodeObj.transform.position = new Vector3(basePos.x, basePos.y + currentYOffset, basePos.z);
+                nodeObj.transform.position = new Vector3(basePos.x, basePos.y, basePos.z);
 
                 nodeObj.transform.localScale = Vector3.one * 0.6f;
 
@@ -62,6 +61,9 @@ namespace Assets.Scripts.Graphs
 
                 localNodeObjects[node.Key] = nodeObj;
             }
+
+
+            graphRoot.transform.position = new Vector3(graphRoot.transform.position.x, graphRoot.transform.position.y + currentYOffset, graphRoot.transform.position.z);
 
             foreach (var edge in edges)
             {
@@ -76,6 +78,7 @@ namespace Assets.Scripts.Graphs
 
                     LineRenderer lr = edgeObj.AddComponent<LineRenderer>();
                     lr.positionCount = 2;
+                    lr.useWorldSpace = false;
                     lr.SetPosition(0, fromObj.transform.position);
                     lr.SetPosition(1, toObj.transform.position);
                     lr.startWidth = 0.05f;
@@ -84,26 +87,31 @@ namespace Assets.Scripts.Graphs
                     lr.material.color = GetColorForEdgeType(edge.Type);
                 }
             }
-
-            graphStackCount++;
             Debug.Log($"✅ Stacked graph {graphId} at Height: {currentYOffset}");
         }
         public void RemoveGraph(string graphId)
         {
             if (graphContainers.TryGetValue(graphId, out GameObject root))
             {
+                int removedIndex = stackOrder.IndexOf(graphId);
+                stackOrder.Remove(graphId);
                 Destroy(root);
                 graphContainers.Remove(graphId);
 
-                graphStackCount--;
+                RealignStack(removedIndex);
             }
         }
-        void ClearVisualization()
+        private void RealignStack(int startIndex)
         {
-            nodeObjects.Clear();
-
-            if (nodesParent != null) Destroy(nodesParent);
-            if (edgesParent != null) Destroy(edgesParent);
+            for (int i = startIndex; i < stackOrder.Count; i++)
+            {
+                string id = stackOrder[i];
+                if (graphContainers.TryGetValue(id, out GameObject root))
+                {
+                    float targetY = i * verticalSpacing;
+                    root.transform.position = new Vector3(root.transform.position.x, targetY, root.transform.position.z);
+                }
+            }
         }
         string ExtractKeyFromId(string id)
         {

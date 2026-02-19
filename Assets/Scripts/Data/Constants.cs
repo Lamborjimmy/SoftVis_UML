@@ -75,4 +75,15 @@ namespace Assets.Scripts.Data
         /// <summary>Expands to include descendant nodes</summary>
         public const string INCLUDE_DESCENDANTS = "include_descendants";
     }
+    public class DiagramTypes
+    {
+        public const string ACTIVITY_DIAGRAM = "activity";
+        public const string CLASS_DIAGRAM = "class";
+        public const string COMMUNICATION_DIAGRAM = "communication";
+        public const string COMPONENT_DIAGRAM = "component";
+        public const string DEPLOYTMENT_DIAGRAM = "deployment";
+        public const string PACKAGE_DIAGRAM = "package";
+        public const string STATE_DIAGRAM = "state";
+        public const string USECASE_DIAGRAM = "usecase";
+    }
 }

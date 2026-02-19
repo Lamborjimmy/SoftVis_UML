@@ -11,7 +11,7 @@ namespace Assets.Scripts.Graphs
 
     public class GraphDataManager : MonoBehaviour
     {
-        public event Action<string, List<NodeData>, List<EdgeData>> OnFullGraphFetched;
+        public event Action<GraphMetadata, List<NodeData>, List<EdgeData>> OnFullGraphFetched;
         public event Action<List<GraphMetadata>> OnGraphsListed;
         public event Action<string, string> OnPipelineError;
         public event Action<GraphMetadata> OnGraphTypeSet;
@@ -182,7 +182,7 @@ namespace Assets.Scripts.Graphs
 
 
                             Debug.Log($"Successfully fetched subgraph: {nodes.Count} nodes, {edges.Count} edges");
-                            OnFullGraphFetched?.Invoke(graphId, nodes, edges);
+                            OnFullGraphFetched?.Invoke(graph, nodes, edges);
                         }
                     }
                     catch (Exception e)

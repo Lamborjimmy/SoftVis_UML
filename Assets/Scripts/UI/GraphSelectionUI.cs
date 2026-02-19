@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using Assets.Scripts.Data;
 using Assets.Scripts.Graphs;
 using TMPro;
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -11,7 +10,7 @@ public class GraphSelectionUI : MonoBehaviour
     [SerializeField] private GameObject graphListElementPrefab;
     [SerializeField] private Transform graphListElementParent;
     [SerializeField] private GraphDataManager graphDataManager;
-    private GraphVisualizer graphVisualizer;
+    [SerializeField] private GraphVisualizerManager graphVisualizerManager;
     private List<string> visualizedGraphIds = new List<string>();
     private Dictionary<string, TextMeshProUGUI> uiLabels = new Dictionary<string, TextMeshProUGUI>();
     private void Start()
@@ -19,8 +18,6 @@ public class GraphSelectionUI : MonoBehaviour
         graphDataManager.OnGraphsListed += HandleGraphsListed;
         graphDataManager.OnGraphTypeSet += HandleGraphTypeSet;
         graphDataManager.ListGraphs();
-
-        graphVisualizer = GetComponent<GraphVisualizer>();
     }
     private void OnDestroy()
     {
@@ -63,7 +60,7 @@ public class GraphSelectionUI : MonoBehaviour
         {
             visualizedGraphIds.Remove(key);
 
-            graphVisualizer.RemoveGraph(key);
+            graphVisualizerManager.RemoveGraph(key);
 
             btnText.text = "Visualize";
             btnImage.color = Color.white;

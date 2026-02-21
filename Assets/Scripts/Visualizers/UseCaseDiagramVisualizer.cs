@@ -1,35 +1,38 @@
-using System.Collections.Generic;
 using Assets.Scripts.Data;
-using Assets.Scripts.Interfaces;
 using UnityEngine;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Assets.Scripts.Visualizers
 {
-    public class UseCaseDiagramVisualizer : IGraphVisualizer
+    public class UseCaseDiagramVisualizer : BaseGraphVisualizer
     {
-        public void RenderGraph(GraphMetadata graph, GameObject container, List<NodeData> nodes, List<EdgeData> edges)
+        protected override void DrawDiagramContent(GameObject container, List<NodeData> nodes, List<EdgeData> edges)
         {
-            if (nodes == null || nodes.Count == 0) return;
-
             GameObject nodesParent = new GameObject("Nodes");
             GameObject edgesParent = new GameObject("Edges");
 
-            nodesParent.transform.parent = container.transform;
-            edgesParent.transform.parent = container.transform;
+            nodesParent.transform.SetParent(container.transform, false);
+            edgesParent.transform.SetParent(container.transform, false);
 
             var nodeObjects = new Dictionary<string, GameObject>();
 
-            foreach (var node in nodes)
+            foreach (var node in nodes.Where(n => n.Type != "DIAGRAM"))
             {
                 var nodeObj = GameObject.CreatePrimitive(PrimitiveType.Sphere);
                 nodeObj.name = node.Label ?? node.Key;
+
                 nodeObj.transform.SetParent(nodesParent.transform, false);
 
-                nodeObj.transform.localPosition = node.GetNodePosition();
+                nodeObj.transform.localPosition = new Vector3(node.GetNodePosition().x, node.GetNodePosition().y + 0.4f, node.GetNodePosition().z);
+
                 nodeObj.transform.localScale = Vector3.one * 0.6f;
 
                 if (nodeObj.TryGetComponent<Renderer>(out var rend))
+                {
+                    rend.material = Resources.Load<Material>("Materials/DefaultMat");
                     rend.material.color = Color.green;
+                }
 
                 nodeObjects[node.Key] = nodeObj;
             }
@@ -39,30 +42,29 @@ namespace Assets.Scripts.Visualizers
                 string fromKey = ExtractKeyFromId(edge.From);
                 string toKey = ExtractKeyFromId(edge.To);
 
-                if (!nodeObjects.TryGetValue(fromKey, out var a) ||
-                    !nodeObjects.TryGetValue(toKey, out var b))
-                    continue;
-
-                var edgeGo = new GameObject($"Edge_{edge.Key}");
-                edgeGo.transform.SetParent(edgesParent.transform, false);
-
-                var lr = edgeGo.AddComponent<LineRenderer>();
-                lr.positionCount = 2;
-                lr.useWorldSpace = false;
-                lr.SetPosition(0, a.transform.localPosition);
-                lr.SetPosition(1, b.transform.localPosition);
-                lr.startWidth = lr.endWidth = 0.04f;
-                lr.material = new Material(Shader.Find("Sprites/Default"));
-                lr.startColor = lr.endColor = Color.black;
+                if (nodeObjects.TryGetValue(fromKey, out var a) && nodeObjects.TryGetValue(toKey, out var b))
+                {
+                    DrawEdge(edgesParent, a.transform.localPosition, b.transform.localPosition, edge.Key);
+                }
             }
 
-            Debug.Log($"Rendered use case diagram for {graph?.Key ?? "?"} inside {container.name}");
+            Debug.Log($"Rendered organized usecase diagram inside {container.name}");
         }
-        string ExtractKeyFromId(string id)
+
+        private void DrawEdge(GameObject parent, Vector3 start, Vector3 end, string edgeKey)
         {
-            if (string.IsNullOrEmpty(id)) return "";
-            int slashIndex = id.LastIndexOf('/');
-            return slashIndex >= 0 ? id.Substring(slashIndex + 1) : id;
+            var edgeGo = new GameObject($"Edge_{edgeKey}");
+            edgeGo.transform.SetParent(parent.transform, false);
+
+            var lr = edgeGo.AddComponent<LineRenderer>();
+            lr.positionCount = 2;
+            lr.useWorldSpace = false;
+            lr.SetPosition(0, start);
+            lr.SetPosition(1, end);
+
+            lr.startWidth = lr.endWidth = 0.04f;
+            lr.material = Resources.Load<Material>("Materials/DefaultMat");
+            lr.startColor = lr.endColor = Color.black;
         }
     }
 }

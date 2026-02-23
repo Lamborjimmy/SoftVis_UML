@@ -12,6 +12,7 @@ namespace Assets.Scripts.Visualizers
     {
         private Dictionary<string, GameObject> prefabsDictionary;
         private Material cachedLineMaterial;
+        protected Material cachedNodeMaterial;
         protected abstract void DrawDiagramContent(GameObject container, List<NodeData> nodes, List<EdgeData> edges);
 
         public void Initialize(Dictionary<string, GameObject> prefabs)
@@ -19,6 +20,8 @@ namespace Assets.Scripts.Visualizers
             prefabsDictionary = prefabs;
             if (cachedLineMaterial == null)
                 cachedLineMaterial = new Material(Shader.Find("Sprites/Default"));
+            if (cachedNodeMaterial == null)
+                cachedNodeMaterial = Resources.Load<Material>("Materials/DefaultMat");
         }
         public void RenderGraph(GraphMetadata graph, GameObject container, List<NodeData> nodes, List<EdgeData> edges)
         {

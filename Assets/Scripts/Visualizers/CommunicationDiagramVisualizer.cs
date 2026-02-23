@@ -30,7 +30,7 @@ namespace Assets.Scripts.Visualizers
 
                 if (nodeObj.TryGetComponent<Renderer>(out var rend))
                 {
-                    rend.material = Resources.Load<Material>("Materials/DefaultMat");
+                    rend.material = cachedNodeMaterial;
                     rend.material.color = Color.cyan;
                 }
 

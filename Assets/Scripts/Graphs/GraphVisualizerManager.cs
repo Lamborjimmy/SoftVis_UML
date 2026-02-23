@@ -9,6 +9,10 @@ namespace Assets.Scripts.Graphs
 {
     public class GraphVisualizerManager : MonoBehaviour
     {
+        [Header("Edge Type Ends Prefabs")]
+        [SerializeField] private GameObject aggregationPrefab;
+        [SerializeField] private GameObject compositionPrefab;
+        [SerializeField] private GameObject generalizationPrefab;
         [SerializeField] private float verticalSpacing = 12f;
         [SerializeField] private GraphDataManager graphManager;
         private Dictionary<string, IGraphVisualizer> visualizersByType;
@@ -30,6 +34,8 @@ namespace Assets.Scripts.Graphs
                 [DiagramTypes.STATE_DIAGRAM] = new StateDiagramVisualizer(),
                 [DiagramTypes.USECASE_DIAGRAM] = new UseCaseDiagramVisualizer(),
             };
+            foreach (var visualizer in visualizersByType.Values)
+                visualizer.Initialize(InitializePrefabDictionary());
             defaultGraphVisualizer = new DefaultGraphVisualizer();
         }
 
@@ -97,6 +103,14 @@ namespace Assets.Scripts.Graphs
                     root.transform.position = new Vector3(root.transform.position.x, y, root.transform.position.z);
                 }
             }
+        }
+        private Dictionary<string, GameObject> InitializePrefabDictionary()
+        {
+            Dictionary<string, GameObject> dict = new Dictionary<string, GameObject>();
+            dict[DiagramEdgeTypes.AGGREGATES] = aggregationPrefab;
+            dict[DiagramEdgeTypes.COMPOSES] = compositionPrefab;
+            dict[DiagramEdgeTypes.GENERALIZES] = generalizationPrefab;
+            return dict;
         }
     }
 }

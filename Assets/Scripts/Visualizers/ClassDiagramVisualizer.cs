@@ -175,7 +175,7 @@ namespace Assets.Scripts.Visualizers
 
                 if (nodeObjects.TryGetValue(fromKey, out var a) && nodeObjects.TryGetValue(toKey, out var b))
                 {
-                    DrawEdge(edgesParent, a, b, edge.Key);
+                    DrawEdge(edgesParent, a, b, edge);
                 }
             }
 
@@ -229,77 +229,6 @@ namespace Assets.Scripts.Visualizers
             measurer.ForceMeshUpdate(true);
             float width = measurer.preferredWidth;
             return width;
-        }
-        private void DrawEdge(GameObject parent, GameObject fromObj, GameObject toObj, string edgeKey)
-        {
-            Vector3 startPoint = GetBorderPoint(fromObj, toObj.transform.position);
-            Vector3 endPoint = GetBorderPoint(toObj, fromObj.transform.position);
-
-            var edgeGo = new GameObject($"Edge_{edgeKey}");
-            edgeGo.transform.SetParent(parent.transform, false);
-
-            var lr = edgeGo.AddComponent<LineRenderer>();
-            lr.positionCount = 2;
-            lr.useWorldSpace = false;
-            lr.SetPosition(0, startPoint);
-            lr.SetPosition(1, endPoint);
-            lr.startWidth = lr.endWidth = 0.04f;
-            lr.material = Resources.Load<Material>("Materials/DefaultMat");
-            lr.startColor = lr.endColor = Color.black;
-        }
-
-        private Vector3 GetBorderPoint(GameObject classObj, Vector3 targetPosition)
-        {
-            Transform background = classObj.transform.Find("Background");
-            if (background == null)
-            {
-                // fallback for spheres or other shapes
-                return classObj.transform.position;
-            }
-
-            // Work in local space of the class container
-            Vector3 targetLocal = classObj.transform.InverseTransformPoint(targetPosition);
-            Vector3 dir = targetLocal.normalized;           // direction from center → target
-            if (dir == Vector3.zero) return classObj.transform.position;
-
-            Vector3 half = background.localScale * 0.5f;    // (halfWidth, halfThicknessY, halfHeightZ)
-
-            // Ray-AABB intersection from center → find the FIRST (nearest) hit
-            float tMin = float.MaxValue;
-
-            // X faces (left / right)
-            if (Mathf.Abs(dir.x) > 0.0001f)
-            {
-                float tx = (dir.x > 0 ? half.x : -half.x) / dir.x;
-                if (tx > 0.001f) tMin = Mathf.Min(tMin, tx);
-            }
-
-            // Z faces (top / bottom in diagram)
-            if (Mathf.Abs(dir.z) > 0.0001f)
-            {
-                float tz = (dir.z > 0 ? half.z : -half.z) / dir.z;
-                if (tz > 0.001f) tMin = Mathf.Min(tMin, tz);
-            }
-
-            // Y faces (thickness) - almost never hit in a 2D diagram, but keep for safety
-            if (Mathf.Abs(dir.y) > 0.0001f)
-            {
-                float ty = (dir.y > 0 ? half.y : -half.y) / dir.y;
-                if (ty > 0.001f) tMin = Mathf.Min(tMin, ty);
-            }
-
-            if (tMin == float.MaxValue || tMin <= 0.001f)
-            {
-                return classObj.transform.position; // fallback
-            }
-
-            // Hit point on the surface
-            Vector3 localHit = dir * tMin;
-
-            // Tiny outward offset so the line never clips into the box
-            localHit += localHit.normalized * 0.03f;
-
-            return classObj.transform.TransformPoint(localHit);
         }
     }
 }

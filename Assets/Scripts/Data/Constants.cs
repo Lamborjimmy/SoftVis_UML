@@ -86,4 +86,54 @@ namespace Assets.Scripts.Data
         public const string STATE_DIAGRAM = "state";
         public const string USECASE_DIAGRAM = "usecase";
     }
+    public class DiagramNodeTypes
+    {
+        public const string DIAGRAM = "DIAGRAM";
+        public const string PACKAGE = "UML_PACKAGE";
+        public const string CLASS = "UML_CLASS";
+        public const string INTERFACE = "UML_INTERFACE";
+        public const string ENUMERATION = "UML_ENUMERATION";
+        public const string USECASE = "UML_USECASE";
+        public const string ACTOR = "UML_ACTOR";
+        public const string ACTIVITY = "UML_ACTIVITY";
+        public const string SWIMLANE = "UML_SWIMLANE";
+        public const string STATE = "UML_STATE";
+        public const string PSEUDOSTATE = "UML_PSEUDOSTATE";
+        public const string NODE = "UML_NODE";
+        public const string COMPONENT = "UML_COMPONENT";
+        public const string LIFELINE = "UML_LIFELINE";
+        public const string ATTRIBUTE = "UML_ATTRIBUTE";
+        public const string METHOD = "UML_METHOD";
+        public const string PARAMETER = "UML_PARAMETER";
+        public const string ACTION = "UML_ACTION";
+        public const string EXTENSION_POINT = "UML_EXTENSION_POINT";
+        public const string OBJECT_NODE = "UML_OBJECT_NODE";
+        public const string ARTIFACT = "UML_ARTIFACT";
+        public const string PORT = "UML_PORT";
+        public const string INITIAL = "UML_INITIAL";
+        public const string FINAL = "UML_FINAL";
+        public const string FORK = "UML_FORK";
+        public const string JOIN = "UML_JOIN";
+        public const string DECISION = "UML_DECISION";
+    }
+    public class DiagramEdgeTypes
+    {
+        public const string NESTED = "NESTED";
+        public const string COMPOSES = "COMPOSES";
+        public const string AGGREGATES = "AGGREGATES";
+        public const string ASSOCIATED_WITH = "ASSOCIATED_WITH";
+        public const string GENERALIZES = "GENERALIZES";
+        public const string DEPENDENCY = "DEPENDENCY";
+        public const string REALIZES_UML = "REALIZES_UML";
+        public const string FLOWS_TO = "FLOWS_TO";
+        public const string OBJECT_FLOW = "OBJECT_FLOW";
+        public const string TRANSITIONS_TO = "TRANSITIONS_TO";
+        public const string MESSAGES = "MESSAGES";
+        public const string REQUIRES = "REQUIRES";
+        public const string PROVIDES = "PROVIDES";
+        public const string DEPLOYED_ON = "DEPLOYED_ON";
+        public const string REPRESENTS = "REPRESENTS";
+        public const string INCLUDES_UML = "INCLUDES_UML";
+        public const string EXTENDS_UML = "EXTENDS_UML";
+    }
 }

@@ -24,7 +24,7 @@ namespace Assets.Scripts.Visualizers
             var classToMembersMap = new Dictionary<string, List<NodeData>>();
 
             // 1. Map Nested Relationships
-            foreach (var edge in edges.Where(e => e.Type == "NESTED"))
+            foreach (var edge in edges.Where(e => e.Type == DiagramEdgeTypes.NESTED))
             {
                 string parentKey = ExtractKeyFromId(edge.From);
                 string childKey = ExtractKeyFromId(edge.To);
@@ -43,11 +43,11 @@ namespace Assets.Scripts.Visualizers
             }
 
             // 2. Spawn Nodes
-            foreach (var node in nodes.Where(n => n.Type != "DIAGRAM"))
+            foreach (var node in nodes.Where(n => n.Type != DiagramNodeTypes.DIAGRAM))
             {
                 if (nestedChildrenKeys.Contains(node.Key)) continue;
 
-                if (node.Type == "UML_CLASS" || node.Type == "UML_ENUMERATION" || node.Type == "UML_INTERFACE")
+                if (node.Type == DiagramNodeTypes.CLASS || node.Type == DiagramNodeTypes.ENUMERATION || node.Type == DiagramNodeTypes.INTERFACE)
                 {
                     // Fetch members early to calculate size
                     classToMembersMap.TryGetValue(node.Key, out var members);
@@ -61,7 +61,7 @@ namespace Assets.Scripts.Visualizers
                     float maxTextWidth = MeasureText(node.Label ?? "", 14, true);
 
                     float totalZ = 0.0f;
-                    if (node.Type == "UML_ENUMERATION" || node.Type == "UML_INTERFACE")
+                    if (node.Type == DiagramNodeTypes.ENUMERATION || node.Type == DiagramNodeTypes.INTERFACE)
                     {
                         totalZ = (memberCount + 2) * lineHeight + paddingZ; // +2 for the header and <<>> notationon
                         if (maxTextWidth < "<<enumeration>>".Length)
@@ -74,9 +74,9 @@ namespace Assets.Scripts.Visualizers
                         foreach (var m in members)
                         {
                             string displayText = "";
-                            if (m.Type == "UML_METHOD")
+                            if (m.Type == DiagramNodeTypes.METHOD)
                                 displayText = "+ " + m.Label + "()";
-                            else if (m.Type == "UML_ATTRIBUTE")
+                            else if (m.Type == DiagramNodeTypes.ATTRIBUTE)
                                 displayText = "- " + m.Label + " : " + m.Properties["type_name"];
                             float w = MeasureText(displayText, 10, false);
                             if (w > maxTextWidth) maxTextWidth = w;
@@ -110,16 +110,16 @@ namespace Assets.Scripts.Visualizers
 
                     // Header text placed slightly above the cube (Y = 0.21f to avoid clipping)
                     CreateTextLabel(classContainer.transform, node.Label, new Vector3(0, 0.21f, currentZ), true, totalX);
-                    if (node.Type == "UML_INTERFACE" || node.Type == "UML_ENUMERATION")
+                    if (node.Type == DiagramNodeTypes.INITIAL || node.Type == DiagramNodeTypes.ENUMERATION)
                     {
                         currentZ -= lineHeight;
 
-                        if (node.Type == "UML_INTERFACE")
+                        if (node.Type == DiagramNodeTypes.INTERFACE)
                         {
                             GameObject text = CreateTextLabel(classContainer.transform, "<<interface>>", new Vector3(0, 0.21f, currentZ), false, totalX);
                             text.GetComponent<TextMeshPro>().alignment = TextAlignmentOptions.Center;
                         }
-                        else if (node.Type == "UML_ENUMERATION")
+                        else if (node.Type == DiagramNodeTypes.ENUMERATION)
                         {
                             GameObject text = CreateTextLabel(classContainer.transform, "<<enumeration>>", new Vector3(0, 0.21f, currentZ), false, totalX);
                             text.GetComponent<TextMeshPro>().alignment = TextAlignmentOptions.Center;
@@ -134,9 +134,9 @@ namespace Assets.Scripts.Visualizers
                         {
                             currentZ -= lineHeight; // Move down for the next line
                             GameObject memberText;
-                            if (member.Type == "UML_METHOD")
+                            if (member.Type == DiagramNodeTypes.METHOD)
                                 memberText = CreateTextLabel(classContainer.transform, "+ " + member.Label + "()", new Vector3(0, 0.21f, currentZ), false, totalX);
-                            else if (member.Type == "UML_ATTRIBUTE")
+                            else if (member.Type == DiagramNodeTypes.ATTRIBUTE)
                                 memberText = CreateTextLabel(classContainer.transform, "- " + member.Label + ":" + member.Properties["type_name"], new Vector3(0, 0.21f, currentZ), false, totalX);
                             // Map the member key to the MAIN container so lines draw to the class box
                             nodeObjects[member.Key] = classContainer;
@@ -168,7 +168,7 @@ namespace Assets.Scripts.Visualizers
             // 3. Draw Edges
             foreach (var edge in edges)
             {
-                if (edge.Type == "NESTED") continue;
+                if (edge.Type == DiagramEdgeTypes.NESTED) continue;
 
                 string fromKey = ExtractKeyFromId(edge.From);
                 string toKey = ExtractKeyFromId(edge.To);

@@ -17,7 +17,7 @@ namespace Assets.Scripts.Visualizers
 
             var nodeObjects = new Dictionary<string, GameObject>();
 
-            foreach (var node in nodes.Where(n => n.Type != "DIAGRAM"))
+            foreach (var node in nodes.Where(n => n.Type != DiagramNodeTypes.DIAGRAM))
             {
                 var nodeObj = GameObject.CreatePrimitive(PrimitiveType.Sphere);
                 nodeObj.name = node.Label ?? node.Key;

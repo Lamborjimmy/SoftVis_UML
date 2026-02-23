@@ -21,8 +21,8 @@ namespace Assets.Scripts.Visualizers
 
         private void VisualizeDiagramPlane(GameObject container, List<NodeData> nodes)
         {
-            var diagramNode = nodes.FirstOrDefault(n => n.Type == "DIAGRAM");
-            var contentNodes = nodes.Where(n => n.Type != "DIAGRAM").ToList();
+            var diagramNode = nodes.FirstOrDefault(n => n.Type == DiagramNodeTypes.DIAGRAM);
+            var contentNodes = nodes.Where(n => n.Type != DiagramNodeTypes.DIAGRAM).ToList();
 
             if (contentNodes.Count == 0) return;
 

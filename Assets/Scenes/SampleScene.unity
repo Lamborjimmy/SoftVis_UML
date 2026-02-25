@@ -740,9 +740,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a20f1f2ebf4334631a368246a929bb0c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Graphs.GraphStackManager
+  actorPrefab: {fileID: 8293396176254187902, guid: fe12d3ed1f09c46edaec34ef372f4edc, type: 3}
   aggregationPrefab: {fileID: 2348603859151733759, guid: 784356de0aced4400ac4a21be420f72c, type: 3}
   compositionPrefab: {fileID: 2348603859151733759, guid: 259a964f9a4c0467581204fe241174d0, type: 3}
   generalizationPrefab: {fileID: 7725161297721261931, guid: 1424344ae3c8141edbd43419c0347023, type: 3}
+  includePrefab: {fileID: 3555933927936002165, guid: c2bf0889ffebc4f9484a8880c168c35e, type: 3}
   verticalSpacing: 15
   graphManager: {fileID: 1547673504}
 --- !u!1 &1011499383

@@ -2,17 +2,18 @@ using System.Collections.Generic;
 using System.Linq;
 using Assets.Scripts.Data;
 using Assets.Scripts.Interfaces;
-using Unity.Mathematics;
-using Unity.VisualScripting;
+using TMPro;
 using UnityEngine;
 
 namespace Assets.Scripts.Visualizers
 {
     public abstract class BaseGraphVisualizer : IGraphVisualizer
     {
-        private Dictionary<string, GameObject> prefabsDictionary;
         private Material cachedLineMaterial;
+        private Material cachedDashedMaterial;
+        private TextMeshPro measurer;
         protected Material cachedNodeMaterial;
+        protected Dictionary<string, GameObject> prefabsDictionary;
         protected abstract void DrawDiagramContent(GameObject container, List<NodeData> nodes, List<EdgeData> edges);
 
         public void Initialize(Dictionary<string, GameObject> prefabs)
@@ -22,6 +23,12 @@ namespace Assets.Scripts.Visualizers
                 cachedLineMaterial = new Material(Shader.Find("Sprites/Default"));
             if (cachedNodeMaterial == null)
                 cachedNodeMaterial = Resources.Load<Material>("Materials/DefaultMat");
+            if (cachedDashedMaterial == null)
+            {
+                cachedDashedMaterial = new Material(Shader.Find("Sprites/Default"));
+                cachedDashedMaterial.mainTexture = CreateDashedTexture();
+                cachedDashedMaterial.mainTextureScale = Vector2.one;
+            }
         }
         public void RenderGraph(GraphMetadata graph, GameObject container, List<NodeData> nodes, List<EdgeData> edges)
         {
@@ -70,7 +77,27 @@ namespace Assets.Scripts.Visualizers
                 rend.material.color = new Color(0.2f, 0.2f, 0.2f, 1.0f);
             }
         }
+        private Texture2D CreateDashedTexture(int dashPixels = 24, int gapPixels = 12, int textureHeight = 8)
+        {
+            int width = dashPixels + gapPixels;
+            var tex = new Texture2D(width, textureHeight, TextureFormat.RGBA32, false);
 
+            tex.wrapMode = TextureWrapMode.Repeat;
+            tex.filterMode = FilterMode.Bilinear;
+
+            Color dashColor = Color.white;
+            Color transparent = new Color(0, 0, 0, 0);
+
+            for (int x = 0; x < width; x++)
+            {
+                Color c = x < dashPixels ? dashColor : transparent;
+                for (int y = 0; y < textureHeight; y++)
+                    tex.SetPixel(x, y, c);
+            }
+
+            tex.Apply();
+            return tex;
+        }
         protected string ExtractKeyFromId(string id)
         {
             if (string.IsNullOrEmpty(id)) return "";
@@ -84,16 +111,40 @@ namespace Assets.Scripts.Visualizers
 
             var edgeGo = new GameObject($"Edge_{edge.Key}");
             edgeGo.transform.SetParent(parent.transform, false);
+
             var lr = edgeGo.AddComponent<LineRenderer>();
             lr.positionCount = 2;
             lr.useWorldSpace = false;
             lr.SetPosition(0, startPoint);
             lr.SetPosition(1, endPoint);
+
             lr.startWidth = lr.endWidth = 0.04f;
             lr.startColor = lr.endColor = Color.white;
-            lr.material = cachedLineMaterial;
+
+            bool isDashed = edge.Type == DiagramEdgeTypes.INCLUDES_UML;
+
+            if (isDashed)
+            {
+                lr.material = cachedDashedMaterial;
+                lr.textureMode = LineTextureMode.Tile;
+
+                float lineLength = Vector3.Distance(startPoint, endPoint);
+                float dashPeriodWorldUnits = 0.35f;   // ← tweak this to change dash spacing
+
+                Vector2 tiling = new Vector2(lineLength / dashPeriodWorldUnits, 1f);
+
+                var block = new MaterialPropertyBlock();
+                block.SetVector("_MainTex_ST", new Vector4(tiling.x, tiling.y, 0f, 0f));
+                lr.SetPropertyBlock(block);
+            }
+            else
+            {
+                lr.material = cachedLineMaterial;
+                lr.textureMode = LineTextureMode.Stretch;
+            }
+
             Vector3 direction = (endPoint - startPoint).normalized;
-            lr.startColor = lr.endColor = Color.white;
+
             switch (edge.Type)
             {
                 case DiagramEdgeTypes.AGGREGATES:
@@ -105,6 +156,10 @@ namespace Assets.Scripts.Visualizers
                 case DiagramEdgeTypes.GENERALIZES:
                     SpawnEdgeDecorator(DiagramEdgeTypes.GENERALIZES, parent.transform, endPoint, direction, -0.5f);
                     break;
+                case DiagramEdgeTypes.INCLUDES_UML:
+                    SpawnEdgeDecorator(DiagramEdgeTypes.INCLUDES_UML, parent.transform, endPoint, direction, -0.3f);
+                    break;
+                    // You can add more cases here if needed
             }
         }
         private void SpawnEdgeDecorator(string edgeType, Transform parent, Vector3 basePosition, Vector3 direction, float offset)
@@ -168,6 +223,51 @@ namespace Assets.Scripts.Visualizers
             localHit += localHit.normalized * 0.03f;
 
             return classObj.transform.TransformPoint(localHit);
+        }
+        protected GameObject CreateTextLabel(Transform parent, string text, Vector3 localPos, float width, float fontSize, TextAlignmentOptions textAlignment = TextAlignmentOptions.Center, FontStyles fontStyle = FontStyles.Normal)
+        {
+            GameObject textObj = new GameObject("Text_" + text);
+            textObj.transform.SetParent(parent, false);
+            textObj.transform.localPosition = localPos;
+            textObj.transform.localRotation = Quaternion.Euler(90, 0, 0);
+
+            var tmp = textObj.AddComponent<TextMeshPro>();
+            tmp.text = text;
+            tmp.fontSize = fontSize;
+
+            tmp.fontStyle = fontStyle;
+            tmp.color = Color.black;
+            tmp.alignment = textAlignment;
+
+            tmp.rectTransform.sizeDelta = new Vector2(width, 2f);
+
+            return textObj;
+        }
+
+        private void EnsureMeasurerExists()
+        {
+            if (measurer != null) return;
+
+            var go = new GameObject("TextMeasurer");
+
+            measurer = go.AddComponent<TextMeshPro>();
+            measurer.enableAutoSizing = false;
+            measurer.fontSize = 10;
+            measurer.fontStyle = FontStyles.Normal;
+            measurer.alignment = TextAlignmentOptions.Left;
+            measurer.overflowMode = TextOverflowModes.Overflow;
+            measurer.gameObject.SetActive(false);
+        }
+        protected float MeasureText(string content, float fontSize, bool isBold = false)
+        {
+            if (string.IsNullOrEmpty(content)) return 0f;
+            EnsureMeasurerExists();
+            measurer.fontSize = fontSize;
+            measurer.fontStyle = isBold ? FontStyles.Bold : FontStyles.Normal;
+            measurer.text = content;
+            measurer.ForceMeshUpdate(true);
+            float width = measurer.preferredWidth;
+            return width;
         }
 
     }

@@ -9,10 +9,13 @@ namespace Assets.Scripts.Graphs
 {
     public class GraphVisualizerManager : MonoBehaviour
     {
+        [Header("Node Type Prefabs")]
+        [SerializeField] private GameObject actorPrefab;
         [Header("Edge Type Ends Prefabs")]
         [SerializeField] private GameObject aggregationPrefab;
         [SerializeField] private GameObject compositionPrefab;
         [SerializeField] private GameObject generalizationPrefab;
+        [SerializeField] private GameObject includePrefab;
         [SerializeField] private float verticalSpacing = 12f;
         [SerializeField] private GraphDataManager graphManager;
         private Dictionary<string, IGraphVisualizer> visualizersByType;
@@ -107,9 +110,11 @@ namespace Assets.Scripts.Graphs
         private Dictionary<string, GameObject> InitializePrefabDictionary()
         {
             Dictionary<string, GameObject> dict = new Dictionary<string, GameObject>();
+            dict[DiagramNodeTypes.ACTOR] = actorPrefab;
             dict[DiagramEdgeTypes.AGGREGATES] = aggregationPrefab;
             dict[DiagramEdgeTypes.COMPOSES] = compositionPrefab;
             dict[DiagramEdgeTypes.GENERALIZES] = generalizationPrefab;
+            dict[DiagramEdgeTypes.INCLUDES_UML] = includePrefab;
             return dict;
         }
     }

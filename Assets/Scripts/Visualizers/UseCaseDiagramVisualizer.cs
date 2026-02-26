@@ -2,6 +2,7 @@ using Assets.Scripts.Data;
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using TMPro;
 
 namespace Assets.Scripts.Visualizers
 {
@@ -9,6 +10,7 @@ namespace Assets.Scripts.Visualizers
     {
         private const float LABEL_FONT_SIZE = 4f;
         private const float HEADER_FONT_SIZE = 4f;
+
         protected override void DrawDiagramContent(GameObject container, List<NodeData> nodes, List<EdgeData> edges)
         {
             GameObject nodesParent = new GameObject("Nodes");
@@ -19,6 +21,14 @@ namespace Assets.Scripts.Visualizers
 
             var nodeObjects = new Dictionary<string, GameObject>();
 
+            var extensionPointsMap = edges
+                .Where(e => e.Type == DiagramEdgeTypes.EXTENDS_UML)
+                .GroupBy(e => ExtractKeyFromId(e.To))
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.Select(e => nodes.FirstOrDefault(n => n.Key == ExtractKeyFromId(e.From))?.Label ?? "Unknown").ToList()
+                );
+
             foreach (var node in nodes.Where(n => n.Type != DiagramNodeTypes.DIAGRAM))
             {
                 GameObject nodeContainer = new GameObject("Node_" + (node.Label ?? node.Key));
@@ -26,7 +36,6 @@ namespace Assets.Scripts.Visualizers
                 nodeContainer.transform.localPosition = new Vector3(node.GetNodePosition().x, node.GetNodePosition().y + 0.2f, node.GetNodePosition().z);
 
                 GameObject visualObj;
-
                 float textWidth = MeasureText(node.Label, LABEL_FONT_SIZE, false);
 
                 if (node.Type == DiagramNodeTypes.ACTOR)
@@ -54,9 +63,24 @@ namespace Assets.Scripts.Visualizers
                     visualObj.transform.SetParent(nodeContainer.transform, false);
                     visualObj.transform.localPosition = Vector3.zero;
 
-                    // Scale the Oval based on measured text
-                    float ovalWidth = Mathf.Max(textWidth + 1.5f, 4f);
-                    visualObj.transform.localScale = new Vector3(ovalWidth, 0.1f, ovalWidth / 2f);
+                    string labelText = node.Label;
+                    int lineCount = 1;
+                    if (extensionPointsMap.TryGetValue(node.Key, out List<string> points))
+                    {
+                        labelText = $"{node.Label}\n<b><size=80%>extension points</size></b>";
+                        foreach (var p in points)
+                        {
+                            labelText += $"\n<size=70%>{p}</size>";
+                        }
+                        lineCount = 2 + points.Count;
+                    }
+
+                    float ovalWidth = Mathf.Max(textWidth + 2.0f, 6f);
+                    float baseHeight = ovalWidth / 2f;
+                    float textHeightRequirement = lineCount * 1.2f;
+                    float ovalHeight = Mathf.Max(baseHeight, textHeightRequirement);
+
+                    visualObj.transform.localScale = new Vector3(ovalWidth, 0.1f, ovalHeight);
 
                     if (visualObj.TryGetComponent<Renderer>(out var rend))
                     {
@@ -64,7 +88,7 @@ namespace Assets.Scripts.Visualizers
                         rend.material.color = new Color(0.75f, 0.95f, 0.75f);
                     }
 
-                    CreateTextLabel(nodeContainer.transform, node.Label, new Vector3(0, 0.15f, 0), ovalWidth, LABEL_FONT_SIZE);
+                    CreateTextLabel(nodeContainer.transform, labelText, new Vector3(0, 0.15f, 0), ovalWidth, LABEL_FONT_SIZE);
                 }
                 else
                 {
@@ -90,6 +114,5 @@ namespace Assets.Scripts.Visualizers
 
             Debug.Log($"Rendered organized usecase diagram inside {container.name}");
         }
-
     }
 }

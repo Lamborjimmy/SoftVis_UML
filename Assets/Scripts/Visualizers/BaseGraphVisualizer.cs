@@ -121,7 +121,7 @@ namespace Assets.Scripts.Visualizers
             lr.startWidth = lr.endWidth = 0.04f;
             lr.startColor = lr.endColor = Color.white;
 
-            bool isDashed = edge.Type == DiagramEdgeTypes.INCLUDES_UML;
+            bool isDashed = (edge.Type == DiagramEdgeTypes.INCLUDES_UML) || (edge.Type == DiagramEdgeTypes.EXTENDS_UML);
 
             if (isDashed)
             {
@@ -159,7 +159,9 @@ namespace Assets.Scripts.Visualizers
                 case DiagramEdgeTypes.INCLUDES_UML:
                     SpawnEdgeDecorator(DiagramEdgeTypes.INCLUDES_UML, parent.transform, endPoint, direction, -0.3f);
                     break;
-                    // You can add more cases here if needed
+                case DiagramEdgeTypes.EXTENDS_UML:
+                    SpawnEdgeDecorator(DiagramEdgeTypes.INCLUDES_UML, parent.transform, endPoint, direction, -0.2f);
+                    break;
             }
         }
         private void SpawnEdgeDecorator(string edgeType, Transform parent, Vector3 basePosition, Vector3 direction, float offset)

@@ -14,7 +14,10 @@ namespace Assets.Scripts.Visualizers
         private TextMeshPro measurer;
         protected Material cachedNodeMaterial;
         protected Dictionary<string, GameObject> prefabsDictionary;
+        private Dictionary<string, int> edgePairCounts = new Dictionary<string, int>();
+
         protected abstract void DrawDiagramContent(GameObject container, List<NodeData> nodes, List<EdgeData> edges);
+
         [Header("Constants")]
         protected const float LABEL_FONT_SIZE = 4f;
         protected const float HEADER_FONT_SIZE = 5f;
@@ -36,9 +39,13 @@ namespace Assets.Scripts.Visualizers
                 cachedDashedMaterial.mainTextureScale = Vector2.one;
             }
         }
+
         public void RenderGraph(GraphMetadata graph, GameObject container, List<NodeData> nodes, List<EdgeData> edges)
         {
             if (nodes == null || nodes.Count == 0) return;
+
+            edgePairCounts.Clear();
+
             VisualizeDiagramPlane(container, nodes);
             DrawDiagramContent(container, nodes, edges);
         }
@@ -76,13 +83,13 @@ namespace Assets.Scripts.Visualizers
 
             plane.transform.localScale = new Vector3(width, height, 1);
 
-
             if (plane.TryGetComponent<Renderer>(out var rend))
             {
                 rend.material = Resources.Load<Material>("Materials/DefaultMat");
                 rend.material.color = new Color(0.2f, 0.2f, 0.2f, 1.0f);
             }
         }
+
         private Texture2D CreateDashedTexture(int dashPixels = 24, int gapPixels = 12, int textureHeight = 8)
         {
             int width = dashPixels + gapPixels;
@@ -104,16 +111,42 @@ namespace Assets.Scripts.Visualizers
             tex.Apply();
             return tex;
         }
+
         protected string ExtractKeyFromId(string id)
         {
             if (string.IsNullOrEmpty(id)) return "";
             int slashIndex = id.LastIndexOf('/');
             return slashIndex >= 0 ? id.Substring(slashIndex + 1) : id;
         }
+
         protected void DrawEdge(GameObject parent, GameObject fromObj, GameObject toObj, EdgeData edge)
         {
             Vector3 startPoint = GetBorderPoint(fromObj, toObj.transform.position);
             Vector3 endPoint = GetBorderPoint(toObj, fromObj.transform.position);
+
+            // --- PARALLEL EDGE OFFSET LOGIC ---
+            // Create a unique key for this pair of nodes regardless of direction
+            string pairKey = fromObj.GetInstanceID() < toObj.GetInstanceID()
+                ? $"{fromObj.GetInstanceID()}_{toObj.GetInstanceID()}"
+                : $"{toObj.GetInstanceID()}_{fromObj.GetInstanceID()}";
+
+            if (!edgePairCounts.ContainsKey(pairKey))
+                edgePairCounts[pairKey] = 0;
+
+            int count = edgePairCounts[pairKey];
+            edgePairCounts[pairKey]++;
+
+            // If there are multiple edges, push them perpendicularly apart
+            if (count > 0)
+            {
+                Vector3 dir = (endPoint - startPoint).normalized;
+                Vector3 perp = Vector3.Cross(dir, Vector3.up).normalized;
+
+                float offsetAmount = 0.8f * ((count + 1) / 2) * (count % 2 != 0 ? 1 : -1);
+
+                startPoint += perp * offsetAmount;
+                endPoint += perp * offsetAmount;
+            }
 
             var edgeGo = new GameObject($"Edge_{edge.Key}");
             edgeGo.transform.SetParent(parent.transform, false);
@@ -127,7 +160,7 @@ namespace Assets.Scripts.Visualizers
             lr.startWidth = lr.endWidth = 0.04f;
             lr.startColor = lr.endColor = Color.white;
 
-            bool isDashed = (edge.Type == DiagramEdgeTypes.INCLUDES_UML) || (edge.Type == DiagramEdgeTypes.EXTENDS_UML);
+            bool isDashed = (edge.Type == DiagramEdgeTypes.INCLUDES_UML) || (edge.Type == DiagramEdgeTypes.EXTENDS_UML) || (edge.Type == DiagramEdgeTypes.DEPENDENCY);
 
             if (isDashed)
             {
@@ -149,27 +182,31 @@ namespace Assets.Scripts.Visualizers
                 lr.textureMode = LineTextureMode.Stretch;
             }
 
-            Vector3 direction = (endPoint - startPoint).normalized;
+            Vector3 finalDirection = (endPoint - startPoint).normalized;
 
             switch (edge.Type)
             {
                 case DiagramEdgeTypes.AGGREGATES:
-                    SpawnEdgeDecorator(DiagramEdgeTypes.AGGREGATES, parent.transform, startPoint, direction, 1f);
+                    SpawnEdgeDecorator(DiagramEdgeTypes.AGGREGATES, parent.transform, startPoint, finalDirection, 1f);
                     break;
                 case DiagramEdgeTypes.COMPOSES:
-                    SpawnEdgeDecorator(DiagramEdgeTypes.COMPOSES, parent.transform, startPoint, direction, 1f);
+                    SpawnEdgeDecorator(DiagramEdgeTypes.COMPOSES, parent.transform, startPoint, finalDirection, 1f);
                     break;
                 case DiagramEdgeTypes.GENERALIZES:
-                    SpawnEdgeDecorator(DiagramEdgeTypes.GENERALIZES, parent.transform, endPoint, direction, -0.5f);
+                    SpawnEdgeDecorator(DiagramEdgeTypes.GENERALIZES, parent.transform, endPoint, finalDirection, -0.5f);
                     break;
                 case DiagramEdgeTypes.INCLUDES_UML:
-                    SpawnEdgeDecorator(DiagramEdgeTypes.INCLUDES_UML, parent.transform, endPoint, direction, -0.3f);
+                    SpawnEdgeDecorator(DiagramEdgeTypes.INCLUDES_UML, parent.transform, endPoint, finalDirection, -0.3f);
                     break;
                 case DiagramEdgeTypes.EXTENDS_UML:
-                    SpawnEdgeDecorator(DiagramEdgeTypes.INCLUDES_UML, parent.transform, endPoint, direction, -0.2f);
+                    SpawnEdgeDecorator(DiagramEdgeTypes.INCLUDES_UML, parent.transform, endPoint, finalDirection, -0.2f);
+                    break;
+                case DiagramEdgeTypes.DEPENDENCY:
+                    SpawnEdgeDecorator(DiagramEdgeTypes.INCLUDES_UML, parent.transform, endPoint, finalDirection, -0.4f);
                     break;
             }
         }
+
         private void SpawnEdgeDecorator(string edgeType, Transform parent, Vector3 basePosition, Vector3 direction, float offset)
         {
             if (prefabsDictionary != null && prefabsDictionary.TryGetValue(edgeType, out GameObject prefab))
@@ -184,35 +221,29 @@ namespace Assets.Scripts.Visualizers
             Transform background = classObj.transform.Find("Background");
             if (background == null)
             {
-                // fallback for spheres or other shapes
                 return classObj.transform.position;
             }
 
-            // Work in local space of the class container
             Vector3 targetLocal = classObj.transform.InverseTransformPoint(targetPosition);
-            Vector3 dir = targetLocal.normalized;           // direction from center → target
+            Vector3 dir = targetLocal.normalized;
             if (dir == Vector3.zero) return classObj.transform.position;
 
-            Vector3 half = background.localScale * 0.5f;    // (halfWidth, halfThicknessY, halfHeightZ)
+            Vector3 half = background.localScale * 0.5f;
 
-            // Ray-AABB intersection from center → find the FIRST (nearest) hit
             float tMin = float.MaxValue;
 
-            // X faces (left / right)
             if (Mathf.Abs(dir.x) > 0.0001f)
             {
                 float tx = (dir.x > 0 ? half.x : -half.x) / dir.x;
                 if (tx > 0.001f) tMin = Mathf.Min(tMin, tx);
             }
 
-            // Z faces (top / bottom in diagram)
             if (Mathf.Abs(dir.z) > 0.0001f)
             {
                 float tz = (dir.z > 0 ? half.z : -half.z) / dir.z;
                 if (tz > 0.001f) tMin = Mathf.Min(tMin, tz);
             }
 
-            // Y faces (thickness) - almost never hit in a 2D diagram, but keep for safety
             if (Mathf.Abs(dir.y) > 0.0001f)
             {
                 float ty = (dir.y > 0 ? half.y : -half.y) / dir.y;
@@ -221,13 +252,10 @@ namespace Assets.Scripts.Visualizers
 
             if (tMin == float.MaxValue || tMin <= 0.001f)
             {
-                return classObj.transform.position; // fallback
+                return classObj.transform.position;
             }
 
-            // Hit point on the surface
             Vector3 localHit = dir * tMin;
-
-            // Tiny outward offset so the line never clips into the box
             localHit += localHit.normalized * 0.03f;
 
             return classObj.transform.TransformPoint(localHit);
@@ -277,6 +305,5 @@ namespace Assets.Scripts.Visualizers
             float width = measurer.preferredWidth;
             return width;
         }
-
     }
 }

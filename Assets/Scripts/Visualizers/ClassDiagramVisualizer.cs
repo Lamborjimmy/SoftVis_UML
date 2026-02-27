@@ -8,8 +8,7 @@ namespace Assets.Scripts.Visualizers
 {
     public class ClassDiagramVisualizer : BaseGraphVisualizer
     {
-        private const float LABEL_FONT_SIZE = 10f;
-        private const float HEADER_FONT_SIZE = 14f;
+        private const float PADDING_Z = 1.5f;
         protected override void DrawDiagramContent(GameObject container, List<NodeData> nodes, List<EdgeData> edges)
         {
             GameObject nodesParent = new GameObject("Nodes");
@@ -50,54 +49,50 @@ namespace Assets.Scripts.Visualizers
 
                 if (node.Type == DiagramNodeTypes.CLASS || node.Type == DiagramNodeTypes.ENUMERATION || node.Type == DiagramNodeTypes.INTERFACE)
                 {
-                    // Fetch members early to calculate size
                     classToMembersMap.TryGetValue(node.Key, out var members);
                     int memberCount = members != null ? members.Count : 0;
 
-                    // Calculate Dimensions dynamically
-                    float lineHeight = 1.2f; // Space between each line of text
-                    float paddingZ = 2.0f; // Top and bottom padding
-
-                    // Estimate width based on string length
                     float maxTextWidth = MeasureText(node.Label ?? "", HEADER_FONT_SIZE, true);
-
                     float totalZ = 0.0f;
+
                     if (node.Type == DiagramNodeTypes.ENUMERATION || node.Type == DiagramNodeTypes.INTERFACE)
                     {
-                        totalZ = (memberCount + 2) * lineHeight + paddingZ; // +2 for the header and <<>> notationon
+                        totalZ = (memberCount + 2) * LINE_HEIGHT + PADDING_Z;
                         if (maxTextWidth < "<<enumeration>>".Length)
                             maxTextWidth = MeasureText("<<enumeration>>", LABEL_FONT_SIZE, false);
                     }
                     else
-                        totalZ = (memberCount + 1) * lineHeight + paddingZ; // +1 for the header
+                    {
+                        totalZ = (memberCount + 1) * LINE_HEIGHT + PADDING_Z;
+                    }
+
                     if (members != null)
                     {
                         foreach (var m in members)
                         {
-                            string displayText = "";
-                            if (m.Type == DiagramNodeTypes.METHOD)
-                                displayText = "+ " + m.Label + "()";
-                            else if (m.Type == DiagramNodeTypes.ATTRIBUTE)
-                                displayText = "- " + m.Label + " : " + m.Properties["type_name"];
+                            string displayText = m.Type == DiagramNodeTypes.METHOD
+                                ? "+ " + m.Label + "()"
+                                : "- " + m.Label + " : " + m.Properties["type_name"];
+
                             float w = MeasureText(displayText, LABEL_FONT_SIZE, false);
                             if (w > maxTextWidth) maxTextWidth = w;
                         }
                     }
 
-                    float totalX = maxTextWidth + 3f;
-                    totalX = Mathf.Max(totalX, 7f);
+                    float totalX = Mathf.Max(maxTextWidth + 3f, 7f);
 
-                    // A. Create the Root Container for this Class
+                    // A. Create Container
                     GameObject classContainer = new GameObject("Class_" + (node.Label ?? node.Key));
                     classContainer.transform.SetParent(nodesParent.transform, false);
-                    classContainer.transform.localPosition = new Vector3(node.GetNodePosition().x, node.GetNodePosition().y + 0.4f, node.GetNodePosition().z);
+                    classContainer.transform.localPosition = new Vector3(node.GetNodePosition().x, node.GetNodePosition().y + Y_ELEVATION, node.GetNodePosition().z);
 
-                    // B. Create the Cube Background
+                    // B. Create Cube Background
                     GameObject cubeObj = GameObject.CreatePrimitive(PrimitiveType.Cube);
                     cubeObj.name = "Background";
                     cubeObj.transform.SetParent(classContainer.transform, false);
-                    cubeObj.transform.localPosition = Vector3.zero; // Center of container
-                    cubeObj.transform.localScale = new Vector3(totalX, 0.4f, totalZ); // Apply dynamic size
+                    cubeObj.transform.localPosition = Vector3.zero;
+                    // Unified Thickness: Y = 0.2f
+                    cubeObj.transform.localScale = new Vector3(totalX, 0.2f, totalZ);
 
                     if (cubeObj.TryGetComponent<Renderer>(out var rend))
                     {
@@ -106,55 +101,41 @@ namespace Assets.Scripts.Visualizers
                     }
 
                     // C. Spawn Text Elements
-                    // Start drawing text near the top edge of the Z-axis bounds
-                    float currentZ = (totalZ / 2f) - (paddingZ / 2f);
+                    float currentZ = (totalZ / 2f) - (PADDING_Z / 2f);
+                    // Unified Text Elevation: Y = 0.11f
+                    CreateTextLabel(classContainer.transform, node.Label, new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, currentZ), totalX, HEADER_FONT_SIZE, TextAlignmentOptions.Center, FontStyles.Bold);
 
-                    // Header text placed slightly above the cube (Y = 0.21f to avoid clipping)
-                    CreateTextLabel(classContainer.transform, node.Label, new Vector3(0, 0.21f, currentZ), totalX, HEADER_FONT_SIZE, TextAlignmentOptions.Center, FontStyles.Bold);
-                    if (node.Type == DiagramNodeTypes.INITIAL || node.Type == DiagramNodeTypes.ENUMERATION)
+                    if (node.Type == DiagramNodeTypes.INITIAL || node.Type == DiagramNodeTypes.ENUMERATION || node.Type == DiagramNodeTypes.INTERFACE)
                     {
-                        currentZ -= lineHeight;
+                        currentZ -= LINE_HEIGHT;
+                        string stereoType = node.Type == DiagramNodeTypes.INTERFACE ? "<<interface>>" : "<<enumeration>>";
 
-                        if (node.Type == DiagramNodeTypes.INTERFACE)
-                        {
-                            GameObject text = CreateTextLabel(classContainer.transform, "<<interface>>", new Vector3(0, 0.21f, currentZ), totalX, LABEL_FONT_SIZE, TextAlignmentOptions.Left);
-                            text.GetComponent<TextMeshPro>().alignment = TextAlignmentOptions.Center;
-                        }
-                        else if (node.Type == DiagramNodeTypes.ENUMERATION)
-                        {
-                            GameObject text = CreateTextLabel(classContainer.transform, "<<enumeration>>", new Vector3(0, 0.21f, currentZ), totalX, LABEL_FONT_SIZE, TextAlignmentOptions.Left);
-                            text.GetComponent<TextMeshPro>().alignment = TextAlignmentOptions.Center;
-
-                        }
+                        GameObject text = CreateTextLabel(classContainer.transform, stereoType, new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, currentZ), totalX, LABEL_FONT_SIZE, TextAlignmentOptions.Center);
                     }
-
 
                     if (members != null)
                     {
                         foreach (var member in members)
                         {
-                            currentZ -= lineHeight; // Move down for the next line
-                            GameObject memberText;
-                            if (member.Type == DiagramNodeTypes.METHOD)
-                                memberText = CreateTextLabel(classContainer.transform, "+ " + member.Label + "()", new Vector3(0, 0.21f, currentZ), totalX, LABEL_FONT_SIZE, TextAlignmentOptions.Left);
-                            else if (member.Type == DiagramNodeTypes.ATTRIBUTE)
-                                memberText = CreateTextLabel(classContainer.transform, "- " + member.Label + ":" + member.Properties["type_name"], new Vector3(0, 0.21f, currentZ), totalX, LABEL_FONT_SIZE, TextAlignmentOptions.Left);
-                            // Map the member key to the MAIN container so lines draw to the class box
+                            currentZ -= LINE_HEIGHT;
+                            string memberString = member.Type == DiagramNodeTypes.METHOD
+                                ? "+ " + member.Label + "()"
+                                : "- " + member.Label + ":" + member.Properties["type_name"];
+
+                            CreateTextLabel(classContainer.transform, memberString, new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, currentZ), totalX, LABEL_FONT_SIZE, TextAlignmentOptions.Left);
                             nodeObjects[member.Key] = classContainer;
                         }
                     }
 
-                    // Map the main class key to the container
                     nodeObjects[node.Key] = classContainer;
                 }
                 else
                 {
-                    // Fallback for floating nodes
                     GameObject nodeObj = GameObject.CreatePrimitive(PrimitiveType.Sphere);
                     nodeObj.name = node.Label ?? node.Key;
                     nodeObj.transform.SetParent(nodesParent.transform, false);
-                    nodeObj.transform.localPosition = new Vector3(node.GetNodePosition().x, node.GetNodePosition().y + 0.4f, node.GetNodePosition().z);
-                    nodeObj.transform.localScale = Vector3.one * 0.6f;
+                    nodeObj.transform.localPosition = new Vector3(node.GetNodePosition().x, node.GetNodePosition().y + Y_ELEVATION, node.GetNodePosition().z);
+                    nodeObj.transform.localScale = Vector3.one * 1.5f;
 
                     if (nodeObj.TryGetComponent<Renderer>(out var rend))
                     {
@@ -179,9 +160,6 @@ namespace Assets.Scripts.Visualizers
                     DrawEdge(edgesParent, a, b, edge);
                 }
             }
-
-            Debug.Log($"Rendered organized Class Diagram inside {container.name}");
         }
-
     }
 }

@@ -15,6 +15,12 @@ namespace Assets.Scripts.Visualizers
         protected Material cachedNodeMaterial;
         protected Dictionary<string, GameObject> prefabsDictionary;
         protected abstract void DrawDiagramContent(GameObject container, List<NodeData> nodes, List<EdgeData> edges);
+        [Header("Constants")]
+        protected const float LABEL_FONT_SIZE = 4f;
+        protected const float HEADER_FONT_SIZE = 5f;
+        protected const float LINE_HEIGHT = 0.8f;
+        protected const float Y_ELEVATION = 0.1f;
+        protected const float Y_ELEVATION_TEXT_OFFSET = 0.05f;
 
         public void Initialize(Dictionary<string, GameObject> prefabs)
         {

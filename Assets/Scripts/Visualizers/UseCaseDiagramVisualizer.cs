@@ -8,7 +8,6 @@ namespace Assets.Scripts.Visualizers
 {
     public class UseCaseDiagramVisualizer : BaseGraphVisualizer
     {
-
         protected override void DrawDiagramContent(GameObject container, List<NodeData> nodes, List<EdgeData> edges)
         {
             GameObject nodesParent = new GameObject("Nodes");
@@ -27,21 +26,95 @@ namespace Assets.Scripts.Visualizers
                     g => g.Select(e => nodes.FirstOrDefault(n => n.Key == ExtractKeyFromId(e.From))?.Label ?? "Unknown").ToList()
                 );
 
-            foreach (var node in nodes.Where(n => n.Type != DiagramNodeTypes.DIAGRAM))
+            // 2. Map Nesting Hierarchy
+            var parentToChildren = new Dictionary<string, List<NodeData>>();
+            var childToParent = new Dictionary<string, string>();
+            var nestedChildKeys = new HashSet<string>();
+
+            foreach (var edge in edges.Where(e => e.Type == DiagramEdgeTypes.NESTED))
             {
+                string pKey = ExtractKeyFromId(edge.From);
+                string cKey = ExtractKeyFromId(edge.To);
+
+                nestedChildKeys.Add(cKey);
+                childToParent[cKey] = pKey;
+
+                if (!parentToChildren.ContainsKey(pKey))
+                    parentToChildren[pKey] = new List<NodeData>();
+
+                var childNode = nodes.FirstOrDefault(n => n.Key == cKey);
+                if (childNode != null)
+                    parentToChildren[pKey].Add(childNode);
+            }
+
+            var rootDiagram = nodes.FirstOrDefault(n => n.Type == DiagramNodeTypes.DIAGRAM && !nestedChildKeys.Contains(n.Key));
+
+            // Helper to get nesting depth
+            int GetDepth(string nodeKey)
+            {
+                int depth = 0;
+                string current = nodeKey;
+                while (childToParent.ContainsKey(current))
+                {
+                    current = childToParent[current];
+                    if (rootDiagram != null && current != rootDiagram.Key)
+                        depth++;
+                }
+                return depth;
+            }
+
+            // 3. Draw Nodes and Containers
+            foreach (var node in nodes)
+            {
+                if (node == rootDiagram) continue;
+
+                int depth = GetDepth(node.Key);
+                float currentElevation = (depth + 1) * Y_ELEVATION;
+
                 GameObject nodeContainer = new GameObject("Node_" + (node.Label ?? node.Key));
                 nodeContainer.transform.SetParent(nodesParent.transform, false);
-                nodeContainer.transform.localPosition = new Vector3(node.GetNodePosition().x, node.GetNodePosition().y + Y_ELEVATION, node.GetNodePosition().z);
 
+                // NESTED CONTAINER
+                if (parentToChildren.TryGetValue(node.Key, out var children) && children.Count > 0)
+                {
+                    GetBounds(node.Key, parentToChildren, out float minX, out float maxX, out float minZ, out float maxZ);
+
+                    float paddingX = 6.0f;
+                    float paddingZ = 4.0f;
+
+                    float width = (maxX - minX) + paddingX * 2;
+                    float height = (maxZ - minZ) + paddingZ * 2;
+
+                    Vector3 center = new Vector3((minX + maxX) / 2f, node.GetNodePosition().y + currentElevation - (Y_ELEVATION / 2f), (minZ + maxZ) / 2f);
+                    nodeContainer.transform.localPosition = center;
+
+                    GameObject boundaryObj = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                    boundaryObj.name = "Background";
+                    boundaryObj.transform.SetParent(nodeContainer.transform, false);
+                    boundaryObj.transform.localPosition = Vector3.zero;
+
+                    boundaryObj.transform.localScale = new Vector3(width, Y_ELEVATION, height);
+
+                    if (boundaryObj.TryGetComponent<Renderer>(out var rend))
+                    {
+                        rend.material = Resources.Load<Material>("Materials/DefaultMat");
+                        rend.material.color = new Color(0.0f, 0.2f, 0.9f, 0.8f);
+                    }
+
+                    CreateTextLabel(nodeContainer.transform, node.Label, new Vector3(0, (Y_ELEVATION / 2f) + 0.1f, (height / 2f) - 1.2f), width, HEADER_FONT_SIZE, TextAlignmentOptions.Center, FontStyles.Bold);
+
+                    nodeObjects[node.Key] = nodeContainer;
+                    continue;
+                }
+
+                nodeContainer.transform.localPosition = new Vector3(node.GetNodePosition().x, node.GetNodePosition().y + currentElevation, node.GetNodePosition().z);
                 GameObject visualObj;
                 float textWidth = MeasureText(node.Label, HEADER_FONT_SIZE, true);
 
                 if (node.Type == DiagramNodeTypes.ACTOR)
                 {
-                    if (prefabsDictionary.TryGetValue(DiagramNodeTypes.ACTOR, out GameObject actorPrefab))
-                    {
+                    if (prefabsDictionary != null && prefabsDictionary.TryGetValue(DiagramNodeTypes.ACTOR, out GameObject actorPrefab))
                         visualObj = Object.Instantiate(actorPrefab, nodeContainer.transform);
-                    }
                     else
                     {
                         visualObj = GameObject.CreatePrimitive(PrimitiveType.Capsule);
@@ -66,20 +139,15 @@ namespace Assets.Scripts.Visualizers
                     if (extensionPointsMap.TryGetValue(node.Key, out List<string> points))
                     {
                         labelText = $"<b>{node.Label}</b>\n<size=80%>extension points</size>";
-                        foreach (var p in points)
-                        {
-                            labelText += $"\n<size=70%>{p}</size>";
-                        }
+                        foreach (var p in points) labelText += $"\n<size=70%>{p}</size>";
                         lineCount = 2 + points.Count;
                     }
 
                     float ovalWidth = Mathf.Max(textWidth + 2.0f, 6f);
                     float baseHeight = ovalWidth / 2f;
-                    // Standardized line height requirement
                     float textHeightRequirement = lineCount * LINE_HEIGHT;
                     float ovalHeight = Mathf.Max(baseHeight, textHeightRequirement);
 
-                    // Unified Thickness: Y = 0.2f
                     visualObj.transform.localScale = new Vector3(ovalWidth, 0.2f, ovalHeight);
 
                     if (visualObj.TryGetComponent<Renderer>(out var rend))
@@ -100,14 +168,42 @@ namespace Assets.Scripts.Visualizers
                 nodeObjects[node.Key] = nodeContainer;
             }
 
+            // 4. Draw Edges
             foreach (var edge in edges)
             {
+                if (edge.Type == DiagramEdgeTypes.NESTED) continue;
                 string fromKey = ExtractKeyFromId(edge.From);
                 string toKey = ExtractKeyFromId(edge.To);
 
                 if (nodeObjects.TryGetValue(fromKey, out var a) && nodeObjects.TryGetValue(toKey, out var b))
                 {
                     DrawEdge(edgesParent, a, b, edge);
+                }
+            }
+        }
+
+        private void GetBounds(string parentKey, Dictionary<string, List<NodeData>> parentToChildren, out float minX, out float maxX, out float minZ, out float maxZ)
+        {
+            minX = minZ = float.MaxValue;
+            maxX = maxZ = float.MinValue;
+
+            if (!parentToChildren.ContainsKey(parentKey)) return;
+
+            foreach (var child in parentToChildren[parentKey])
+            {
+                Vector3 pos = child.GetNodePosition();
+                minX = Mathf.Min(minX, pos.x);
+                maxX = Mathf.Max(maxX, pos.x);
+                minZ = Mathf.Min(minZ, pos.z);
+                maxZ = Mathf.Max(maxZ, pos.z);
+
+                if (parentToChildren.ContainsKey(child.Key))
+                {
+                    GetBounds(child.Key, parentToChildren, out float cMinX, out float cMaxX, out float cMinZ, out float cMaxZ);
+                    minX = Mathf.Min(minX, cMinX);
+                    maxX = Mathf.Max(maxX, cMaxX);
+                    minZ = Mathf.Min(minZ, cMinZ);
+                    maxZ = Mathf.Max(maxZ, cMaxZ);
                 }
             }
         }

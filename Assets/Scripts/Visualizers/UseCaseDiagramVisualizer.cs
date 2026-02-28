@@ -97,7 +97,7 @@ namespace Assets.Scripts.Visualizers
 
                     if (boundaryObj.TryGetComponent<Renderer>(out var rend))
                     {
-                        rend.material = Resources.Load<Material>("Materials/DefaultMat");
+                        rend.material = cachedNodeMaterial;
                         rend.material.color = new Color(0.0f, 0.2f, 0.9f, 0.8f);
                     }
 

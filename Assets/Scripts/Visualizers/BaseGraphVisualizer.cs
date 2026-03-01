@@ -46,49 +46,59 @@ namespace Assets.Scripts.Visualizers
 
             edgePairCounts.Clear();
 
-            VisualizeDiagramPlane(container, nodes);
             DrawDiagramContent(container, nodes, edges);
+
+            VisualizeDiagramPlane(container, nodes);
         }
 
         private void VisualizeDiagramPlane(GameObject container, List<NodeData> nodes)
         {
             var diagramNode = nodes.FirstOrDefault(n => n.Type == DiagramNodeTypes.DIAGRAM);
-            var contentNodes = nodes.Where(n => n.Type != DiagramNodeTypes.DIAGRAM).ToList();
 
-            if (contentNodes.Count == 0) return;
+            // Grab all the 3D models we just generated inside the container
+            Renderer[] allRenderers = container.GetComponentsInChildren<Renderer>();
 
-            float minX = float.MaxValue, maxX = float.MinValue;
-            float minZ = float.MaxValue, maxZ = float.MinValue;
+            if (allRenderers.Length == 0) return;
 
-            foreach (var node in contentNodes)
+            // Initialize the bounding box using the first valid renderer
+            Bounds totalBounds = new Bounds(allRenderers[0].bounds.center, Vector3.zero);
+
+            // Encapsulate every visible object into our mathematical bounding box
+            foreach (var rend in allRenderers)
             {
-                Vector3 pos = node.GetNodePosition();
-                if (pos.x < minX) minX = pos.x;
-                if (pos.x > maxX) maxX = pos.x;
-                if (pos.z < minZ) minZ = pos.z;
-                if (pos.z > maxZ) maxZ = pos.z;
+                // Skip disabled renderers (like the invisible edge-routing "Background" boxes)
+                if (!rend.enabled) continue;
+                totalBounds.Encapsulate(rend.bounds);
             }
 
             float padding = 5f;
-            float width = (maxX - minX) + padding * 2;
-            float height = (maxZ - minZ) + padding * 2;
-            Vector3 center = new Vector3((minX + maxX) / 2, -0.5f, (minZ + maxZ) / 2);
+            float width = totalBounds.size.x + (padding * 2);
+            float height = totalBounds.size.z + (padding * 2);
 
+            // Find the true center of the rendered objects in world space
+            Vector3 center = new Vector3(totalBounds.center.x, -0.5f, totalBounds.center.z);
+
+            // Generate the Plane
             GameObject plane = GameObject.CreatePrimitive(PrimitiveType.Cube);
             plane.name = diagramNode?.Label ?? "Diagram_Base";
             plane.transform.SetParent(container.transform, false);
 
-            plane.transform.localPosition = center;
+            plane.transform.position = center;
             plane.transform.localRotation = Quaternion.Euler(90, 0, 0);
-
             plane.transform.localScale = new Vector3(width, height, 1);
 
-            if (plane.TryGetComponent<Renderer>(out var rend))
+            if (plane.TryGetComponent<Renderer>(out var rendMat))
             {
-                rend.material = Resources.Load<Material>("Materials/DefaultMat");
-                rend.material.color = new Color(0.2f, 0.2f, 0.2f, 1.0f);
+                rendMat.material = cachedNodeMaterial;
+                rendMat.material.color = new Color(0.2f, 0.2f, 0.2f, 1.0f);
             }
+
+            Vector3 offset = new Vector3(-totalBounds.center.x, 0, -totalBounds.center.z);
+
+            foreach (Transform child in container.transform)
+                child.position += offset;
         }
+
 
         private Texture2D CreateDashedTexture(int dashPixels = 24, int gapPixels = 12, int textureHeight = 8)
         {

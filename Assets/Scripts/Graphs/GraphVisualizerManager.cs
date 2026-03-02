@@ -12,6 +12,9 @@ namespace Assets.Scripts.Graphs
         [Header("Node Type Prefabs")]
         [SerializeField] private GameObject actorPrefab;
         [SerializeField] private GameObject packagePrefab;
+        [SerializeField] private GameObject statePrefab;
+        [SerializeField] private GameObject initialPrefab;
+        [SerializeField] private GameObject finalPrefab;
         [Header("Edge Type Ends Prefabs")]
         [SerializeField] private GameObject aggregationPrefab;
         [SerializeField] private GameObject compositionPrefab;
@@ -113,6 +116,9 @@ namespace Assets.Scripts.Graphs
             Dictionary<string, GameObject> dict = new Dictionary<string, GameObject>();
             dict[DiagramNodeTypes.ACTOR] = actorPrefab;
             dict[DiagramNodeTypes.PACKAGE] = packagePrefab;
+            dict[DiagramNodeTypes.STATE] = statePrefab;
+            dict[DiagramNodeTypes.INITIAL] = initialPrefab;
+            dict[DiagramNodeTypes.FINAL] = finalPrefab;
             dict[DiagramEdgeTypes.AGGREGATES] = aggregationPrefab;
             dict[DiagramEdgeTypes.COMPOSES] = compositionPrefab;
             dict[DiagramEdgeTypes.GENERALIZES] = generalizationPrefab;

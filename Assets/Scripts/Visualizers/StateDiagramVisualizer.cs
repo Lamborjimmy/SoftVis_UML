@@ -1,7 +1,7 @@
 using Assets.Scripts.Data;
 using UnityEngine;
 using System.Collections.Generic;
-using System.Linq;
+using TMPro;
 
 namespace Assets.Scripts.Visualizers
 {
@@ -17,54 +17,83 @@ namespace Assets.Scripts.Visualizers
 
             var nodeObjects = new Dictionary<string, GameObject>();
 
-            foreach (var node in nodes.Where(n => n.Type != DiagramNodeTypes.DIAGRAM))
+            // 1. Draw all Nodes (States, Initial, Final)
+            foreach (var node in nodes)
             {
-                var nodeObj = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                nodeObj.name = node.Label ?? node.Key;
+                if (node.Type == DiagramNodeTypes.DIAGRAM) continue;
 
-                nodeObj.transform.SetParent(nodesParent.transform, false);
+                GameObject nodeContainer = new GameObject("Node_" + (node.Label ?? node.Key));
+                nodeContainer.transform.SetParent(nodesParent.transform, false);
 
-                nodeObj.transform.localPosition = new Vector3(node.GetNodePosition().x, node.GetNodePosition().y + 0.4f, node.GetNodePosition().z);
+                // Position the container
+                nodeContainer.transform.localPosition = new Vector3(node.GetNodePosition().x, node.GetNodePosition().y + Y_ELEVATION, node.GetNodePosition().z);
 
-                nodeObj.transform.localScale = Vector3.one * 0.6f;
+                GameObject visualObj;
+                float textWidth = MeasureText(node.Label, HEADER_FONT_SIZE, true);
 
-                if (nodeObj.TryGetComponent<Renderer>(out var rend))
+
+                // --- INITIAL & FINAL NODES ---
+                if (node.Type == DiagramNodeTypes.PSEUDOSTATE)
                 {
-                    rend.material = cachedNodeMaterial;
-                    rend.material.color = Color.magenta;
+                    string prefabKey = node.Label == "initial" ? DiagramNodeTypes.INITIAL : DiagramNodeTypes.FINAL;
+
+                    if (prefabsDictionary != null && prefabsDictionary.TryGetValue(prefabKey, out GameObject prefab))
+                    {
+                        visualObj = Object.Instantiate(prefab, nodeContainer.transform);
+                    }
+                    else
+                    {
+                        // Fallback primitive for Initial/Final (A classic Sphere)
+                        visualObj = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                        visualObj.transform.SetParent(nodeContainer.transform, false);
+                    }
+
+                    visualObj.name = "Background";
+                    visualObj.transform.localPosition = Vector3.zero;
+                    visualObj.transform.localScale = Vector3.one;
+                }
+                // --- STANDARD STATE NODES ---
+                else
+                {
+                    float nodeWidth = Mathf.Max(textWidth + 0f, 5f);
+                    float nodeHeight = 3.5f;
+
+                    if (prefabsDictionary != null && prefabsDictionary.TryGetValue(DiagramNodeTypes.STATE, out GameObject prefab))
+                    {
+                        visualObj = Object.Instantiate(prefab, nodeContainer.transform);
+                        visualObj.name = "Background";
+                        visualObj.transform.localPosition = Vector3.zero;
+                        visualObj.transform.localScale = new Vector3(nodeWidth, Y_ELEVATION, nodeHeight);
+                    }
+                    else
+                    {
+                        // Fallback primitive for State (Cube, acting like a rounded rect)
+                        visualObj = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                        visualObj.transform.SetParent(nodeContainer.transform, false);
+                        visualObj.name = "Background";
+                        visualObj.transform.localPosition = Vector3.zero;
+                        visualObj.transform.localScale = new Vector3(nodeWidth, Y_ELEVATION, nodeHeight);
+                    }
+
+                    CreateTextLabel(nodeContainer.transform, node.Label, new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, 0), nodeWidth, HEADER_FONT_SIZE, TextAlignmentOptions.Center);
                 }
 
-                nodeObjects[node.Key] = nodeObj;
+                nodeObjects[node.Key] = nodeContainer;
             }
 
+            // 2. Draw all Edges (Transitions)
             foreach (var edge in edges)
             {
+                if (edge.Type == DiagramEdgeTypes.NESTED) continue;
+
                 string fromKey = ExtractKeyFromId(edge.From);
                 string toKey = ExtractKeyFromId(edge.To);
 
                 if (nodeObjects.TryGetValue(fromKey, out var a) && nodeObjects.TryGetValue(toKey, out var b))
                 {
-                    DrawEdge(edgesParent, a.transform.localPosition, b.transform.localPosition, edge.Key);
+                    DrawEdge(edgesParent, a, b, edge);
                 }
             }
-
-            Debug.Log($"Rendered organized state diagram inside {container.name}");
-        }
-
-        private void DrawEdge(GameObject parent, Vector3 start, Vector3 end, string edgeKey)
-        {
-            var edgeGo = new GameObject($"Edge_{edgeKey}");
-            edgeGo.transform.SetParent(parent.transform, false);
-
-            var lr = edgeGo.AddComponent<LineRenderer>();
-            lr.positionCount = 2;
-            lr.useWorldSpace = false;
-            lr.SetPosition(0, start);
-            lr.SetPosition(1, end);
-
-            lr.startWidth = lr.endWidth = 0.04f;
-            lr.material = Resources.Load<Material>("Materials/DefaultMat");
-            lr.startColor = lr.endColor = Color.black;
         }
     }
 }

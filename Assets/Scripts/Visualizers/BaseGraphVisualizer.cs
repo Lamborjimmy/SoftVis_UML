@@ -158,7 +158,7 @@ namespace Assets.Scripts.Visualizers
                 endPoint += perp * offsetAmount;
             }
 
-            var edgeGo = new GameObject($"Edge_{edge.Key}");
+            var edgeGo = new GameObject($"Edge_{edge.Type}");
             edgeGo.transform.SetParent(parent.transform, false);
 
             var lr = edgeGo.AddComponent<LineRenderer>();
@@ -214,6 +214,9 @@ namespace Assets.Scripts.Visualizers
                 case DiagramEdgeTypes.DEPENDENCY:
                     SpawnEdgeDecorator(DiagramEdgeTypes.INCLUDES_UML, parent.transform, endPoint, finalDirection, -0.4f);
                     break;
+                case DiagramEdgeTypes.TRANSITIONS_TO:
+                    SpawnEdgeDecorator(DiagramEdgeTypes.INCLUDES_UML, parent.transform, endPoint, finalDirection, -0.4f);
+                    break;
             }
         }
 
@@ -238,25 +241,48 @@ namespace Assets.Scripts.Visualizers
             Vector3 dir = targetLocal.normalized;
             if (dir == Vector3.zero) return classObj.transform.position;
 
-            Vector3 half = background.localScale * 0.5f;
+            // 1. Calculate the true visual bounds using Renderers instead of just localScale
+            Renderer[] renderers = background.GetComponentsInChildren<Renderer>();
+            Bounds localBounds = new Bounds(Vector3.zero, Vector3.zero);
+
+            if (renderers.Length > 0)
+            {
+                // Initialize bounds with the first renderer's true local position
+                localBounds = new Bounds(classObj.transform.InverseTransformPoint(renderers[0].bounds.center), Vector3.zero);
+                foreach (var r in renderers)
+                {
+                    // Encapsulate true world bounds converted to local space
+                    localBounds.Encapsulate(classObj.transform.InverseTransformPoint(r.bounds.min));
+                    localBounds.Encapsulate(classObj.transform.InverseTransformPoint(r.bounds.max));
+                }
+            }
+            else
+            {
+                // Fallback for empty objects without renderers
+                localBounds = new Bounds(Vector3.zero, background.localScale);
+            }
+
+            Vector3 minLocal = localBounds.min;
+            Vector3 maxLocal = localBounds.max;
 
             float tMin = float.MaxValue;
 
+            // 2. Intersect ray (from center 0,0,0) with the true local AABB
             if (Mathf.Abs(dir.x) > 0.0001f)
             {
-                float tx = (dir.x > 0 ? half.x : -half.x) / dir.x;
+                float tx = (dir.x > 0 ? maxLocal.x : minLocal.x) / dir.x;
                 if (tx > 0.001f) tMin = Mathf.Min(tMin, tx);
             }
 
             if (Mathf.Abs(dir.z) > 0.0001f)
             {
-                float tz = (dir.z > 0 ? half.z : -half.z) / dir.z;
+                float tz = (dir.z > 0 ? maxLocal.z : minLocal.z) / dir.z;
                 if (tz > 0.001f) tMin = Mathf.Min(tMin, tz);
             }
 
             if (Mathf.Abs(dir.y) > 0.0001f)
             {
-                float ty = (dir.y > 0 ? half.y : -half.y) / dir.y;
+                float ty = (dir.y > 0 ? maxLocal.y : minLocal.y) / dir.y;
                 if (ty > 0.001f) tMin = Mathf.Min(tMin, ty);
             }
 
@@ -266,7 +292,7 @@ namespace Assets.Scripts.Visualizers
             }
 
             Vector3 localHit = dir * tMin;
-            localHit += localHit.normalized * 0.03f;
+            localHit += localHit.normalized * 0.03f; // Slight offset outward to prevent clipping
 
             return classObj.transform.TransformPoint(localHit);
         }

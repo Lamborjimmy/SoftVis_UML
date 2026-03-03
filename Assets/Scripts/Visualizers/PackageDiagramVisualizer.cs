@@ -158,19 +158,11 @@ namespace Assets.Scripts.Visualizers
                 nodeObjects[node.Key] = nodeContainer;
             }
 
-            // 3. Draw Edges 
-            foreach (var edge in edges)
-            {
-                if (edge.Type == DiagramEdgeTypes.NESTED) continue;
+            var validEdges = edges.Where(e => e.Type != DiagramEdgeTypes.NESTED).ToList();
+            var selfLoops = validEdges.Where(e => ExtractKeyFromId(e.From) == ExtractKeyFromId(e.To));
+            var normalEdges = validEdges.Where(e => ExtractKeyFromId(e.From) != ExtractKeyFromId(e.To));
+            DrawDiagramEdges(selfLoops, nodeObjects, edgesParent, normalEdges);
 
-                string fromKey = ExtractKeyFromId(edge.From);
-                string toKey = ExtractKeyFromId(edge.To);
-
-                if (nodeObjects.TryGetValue(fromKey, out var a) && nodeObjects.TryGetValue(toKey, out var b))
-                {
-                    DrawEdge(edgesParent, a, b, edge);
-                }
-            }
         }
 
         private Color GetLayerColor(int depth, bool isContainer)

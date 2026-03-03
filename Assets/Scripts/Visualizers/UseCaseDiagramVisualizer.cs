@@ -168,20 +168,12 @@ namespace Assets.Scripts.Visualizers
                 nodeObjects[node.Key] = nodeContainer;
             }
 
-            // 4. Draw Edges
-            foreach (var edge in edges)
-            {
-                if (edge.Type == DiagramEdgeTypes.NESTED) continue;
-                string fromKey = ExtractKeyFromId(edge.From);
-                string toKey = ExtractKeyFromId(edge.To);
+            var validEdges = edges.Where(e => e.Type != DiagramEdgeTypes.NESTED).ToList();
+            var selfLoops = validEdges.Where(e => ExtractKeyFromId(e.From) == ExtractKeyFromId(e.To));
+            var normalEdges = validEdges.Where(e => ExtractKeyFromId(e.From) != ExtractKeyFromId(e.To));
+            DrawDiagramEdges(selfLoops, nodeObjects, edgesParent, normalEdges);
 
-                if (nodeObjects.TryGetValue(fromKey, out var a) && nodeObjects.TryGetValue(toKey, out var b))
-                {
-                    DrawEdge(edgesParent, a, b, edge);
-                }
-            }
         }
-
         private void GetBounds(string parentKey, Dictionary<string, List<NodeData>> parentToChildren, out float minX, out float maxX, out float minZ, out float maxZ)
         {
             minX = minZ = float.MaxValue;

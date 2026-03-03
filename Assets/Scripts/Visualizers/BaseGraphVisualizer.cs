@@ -129,7 +129,7 @@ namespace Assets.Scripts.Visualizers
             return slashIndex >= 0 ? id.Substring(slashIndex + 1) : id;
         }
 
-        protected void DrawEdge(GameObject parent, GameObject fromObj, GameObject toObj, EdgeData edge)
+        protected void DrawEdge(GameObject parent, GameObject fromObj, GameObject toObj, EdgeData edge, bool drawDecorator = true)
         {
             if (fromObj == toObj)
             {
@@ -199,30 +199,141 @@ namespace Assets.Scripts.Visualizers
 
             Vector3 finalDirection = (endPoint - startPoint).normalized;
 
-            switch (edge.Type)
+            if (drawDecorator)
             {
-                case DiagramEdgeTypes.AGGREGATES:
-                    SpawnEdgeDecorator(DiagramEdgeTypes.AGGREGATES, parent.transform, startPoint, finalDirection, 1f);
-                    break;
-                case DiagramEdgeTypes.COMPOSES:
-                    SpawnEdgeDecorator(DiagramEdgeTypes.COMPOSES, parent.transform, startPoint, finalDirection, 1f);
-                    break;
-                case DiagramEdgeTypes.GENERALIZES:
-                    SpawnEdgeDecorator(DiagramEdgeTypes.GENERALIZES, parent.transform, endPoint, finalDirection, -0.5f);
-                    break;
-                case DiagramEdgeTypes.INCLUDES_UML:
-                    SpawnEdgeDecorator(DiagramEdgeTypes.INCLUDES_UML, parent.transform, endPoint, finalDirection, -0.3f);
-                    break;
-                case DiagramEdgeTypes.EXTENDS_UML:
-                    SpawnEdgeDecorator(DiagramEdgeTypes.INCLUDES_UML, parent.transform, endPoint, finalDirection, -0.2f);
-                    break;
-                case DiagramEdgeTypes.DEPENDENCY:
-                    SpawnEdgeDecorator(DiagramEdgeTypes.INCLUDES_UML, parent.transform, endPoint, finalDirection, -0.4f);
-                    break;
-                case DiagramEdgeTypes.TRANSITIONS_TO:
-                    SpawnEdgeDecorator(DiagramEdgeTypes.INCLUDES_UML, parent.transform, endPoint, finalDirection, -0.4f);
-                    break;
+                switch (edge.Type)
+                {
+                    case DiagramEdgeTypes.AGGREGATES:
+                        SpawnEdgeDecorator(DiagramEdgeTypes.AGGREGATES, parent.transform, startPoint, finalDirection, 1f);
+                        break;
+                    case DiagramEdgeTypes.COMPOSES:
+                        SpawnEdgeDecorator(DiagramEdgeTypes.COMPOSES, parent.transform, startPoint, finalDirection, 1f);
+                        break;
+                    case DiagramEdgeTypes.GENERALIZES:
+                        SpawnEdgeDecorator(DiagramEdgeTypes.GENERALIZES, parent.transform, endPoint, finalDirection, -0.5f);
+                        break;
+                    case DiagramEdgeTypes.INCLUDES_UML:
+                        SpawnEdgeDecorator(DiagramEdgeTypes.INCLUDES_UML, parent.transform, endPoint, finalDirection, -0.3f);
+                        break;
+                    case DiagramEdgeTypes.EXTENDS_UML:
+                        SpawnEdgeDecorator(DiagramEdgeTypes.INCLUDES_UML, parent.transform, endPoint, finalDirection, -0.2f);
+                        break;
+                    case DiagramEdgeTypes.DEPENDENCY:
+                        SpawnEdgeDecorator(DiagramEdgeTypes.INCLUDES_UML, parent.transform, endPoint, finalDirection, -0.4f);
+                        break;
+                    case DiagramEdgeTypes.TRANSITIONS_TO:
+                        SpawnEdgeDecorator(DiagramEdgeTypes.INCLUDES_UML, parent.transform, endPoint, finalDirection, -0.4f);
+                        break;
+                }
             }
+        }
+        protected void DrawBundledEdges(GameObject parent, List<EdgeData> groupedEdges, Dictionary<string, GameObject> nodeObjects)
+        {
+            if (groupedEdges.Count == 0) return;
+
+            // If only 1 edge in the group, draw it normally
+            if (groupedEdges.Count == 1)
+            {
+                var edge = groupedEdges[0];
+                if (nodeObjects.TryGetValue(ExtractKeyFromId(edge.From), out var a) && nodeObjects.TryGetValue(ExtractKeyFromId(edge.To), out var b))
+                {
+                    DrawEdge(parent, a, b, edge);
+                }
+                return;
+            }
+
+            // --- Multiple Edges: Create a Merge Hub ---
+            string toKey = ExtractKeyFromId(groupedEdges[0].To);
+            if (!nodeObjects.TryGetValue(toKey, out GameObject targetObj)) return;
+
+            // 1. Calculate the average position of all source nodes
+            Vector3 averageSourcePos = Vector3.zero;
+            List<GameObject> sourceObjs = new List<GameObject>();
+
+            foreach (var edge in groupedEdges)
+            {
+                if (nodeObjects.TryGetValue(ExtractKeyFromId(edge.From), out GameObject src))
+                {
+                    sourceObjs.Add(src);
+                    averageSourcePos += src.transform.position;
+                }
+            }
+
+            if (sourceObjs.Count == 0) return;
+            averageSourcePos /= sourceObjs.Count;
+
+            // 2. Determine the direction the edges are approaching from
+            Vector3 dirToSources = (averageSourcePos - targetObj.transform.position).normalized;
+            if (dirToSources == Vector3.zero) dirToSources = Vector3.forward;
+
+            // 3. Find the exact outer edge of the target node facing the incoming lines
+            Vector3 farTarget = targetObj.transform.position + (dirToSources * 1000f);
+            Vector3 borderPoint = GetBorderPoint(targetObj, farTarget);
+
+            // 4. Place the hub safely OUTSIDE the visual bounds of the node
+            float standoffDistance = 4.5f; // Hub will be exactly 2.5 units outside the border
+            Vector3 mergePoint = borderPoint + (dirToSources * standoffDistance);
+
+            // 5. Create a temporary invisible Hub object to act as a routing node
+            GameObject hubObj = new GameObject($"Hub_{toKey}_{groupedEdges[0].Type}");
+            hubObj.transform.position = mergePoint;
+            hubObj.transform.SetParent(parent.transform, false);
+
+            // 6. Draw lines from all sources to the Hub (drawDecorator = false)
+            foreach (var edge in groupedEdges)
+            {
+                if (nodeObjects.TryGetValue(ExtractKeyFromId(edge.From), out GameObject src))
+                {
+                    DrawEdge(parent, src, hubObj, edge, false);
+                }
+            }
+
+            // 7. Draw one final line from the Hub to the Target (drawDecorator = true)
+            DrawEdge(parent, hubObj, targetObj, groupedEdges[0], true);
+        }
+        protected void DrawDiagramEdges(IEnumerable<EdgeData> selfLoops, Dictionary<string, GameObject> nodeObjects, GameObject edgesParent, IEnumerable<EdgeData> normalEdges)
+        {
+            foreach (var edge in selfLoops)
+            {
+                if (nodeObjects.TryGetValue(ExtractKeyFromId(edge.From), out var a))
+                {
+                    DrawEdge(edgesParent, a, a, edge);
+                }
+            }
+
+            var edgeGroups = normalEdges.GroupBy(e =>
+            {
+                string toKey = ExtractKeyFromId(e.To);
+                string fromKey = ExtractKeyFromId(e.From);
+                string directionSector = "Unknown";
+
+                if (nodeObjects.TryGetValue(fromKey, out GameObject src) && nodeObjects.TryGetValue(toKey, out GameObject tgt))
+                {
+                    directionSector = GetApproachDirection(src.transform.position, tgt.transform.position);
+                }
+
+                return $"{toKey}_{e.Type}_{directionSector}";
+            });
+
+            foreach (var group in edgeGroups)
+            {
+                DrawBundledEdges(edgesParent, group.ToList(), nodeObjects);
+            }
+        }
+        protected string GetApproachDirection(Vector3 sourcePos, Vector3 targetPos)
+        {
+            Vector3 dir = (sourcePos - targetPos).normalized;
+
+            float angle = Mathf.Atan2(dir.z, dir.x) * Mathf.Rad2Deg;
+
+            if (angle < 0) angle += 360f;
+
+            int numOfSectors = 4;
+            float degrees = 360 / numOfSectors;
+            Debug.Log(degrees);
+            int sector = Mathf.RoundToInt(angle / degrees) % numOfSectors;
+
+            return sector.ToString();
         }
         private void DrawSelfLoop(GameObject parent, GameObject nodeObj, EdgeData edge)
         {

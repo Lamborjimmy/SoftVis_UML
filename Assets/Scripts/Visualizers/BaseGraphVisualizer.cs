@@ -131,6 +131,11 @@ namespace Assets.Scripts.Visualizers
 
         protected void DrawEdge(GameObject parent, GameObject fromObj, GameObject toObj, EdgeData edge)
         {
+            if (fromObj == toObj)
+            {
+                DrawSelfLoop(parent, fromObj, edge);
+                return;
+            }
             Vector3 startPoint = GetBorderPoint(fromObj, toObj.transform.position);
             Vector3 endPoint = GetBorderPoint(toObj, fromObj.transform.position);
 
@@ -219,7 +224,94 @@ namespace Assets.Scripts.Visualizers
                     break;
             }
         }
+        private void DrawSelfLoop(GameObject parent, GameObject nodeObj, EdgeData edge)
+        {
 
+            // 1.Create fake targets to start drawing from edges of the node
+            Vector3 topTarget = nodeObj.transform.position + Vector3.forward * 10f;
+            Vector3 rightTarget = nodeObj.transform.position + Vector3.right * 10f;
+
+            Vector3 startPoint = GetBorderPoint(nodeObj, topTarget);
+            Vector3 endPoint = GetBorderPoint(nodeObj, rightTarget);
+
+            // 2. Define Control Points 
+            float loopScale = 3.5f; // Increase this if the loop is too tight
+            Vector3 cp1 = startPoint + Vector3.forward * loopScale + Vector3.right * (loopScale * 0.5f);
+            Vector3 cp2 = endPoint + Vector3.right * loopScale + Vector3.forward * (loopScale * 0.5f);
+
+            // 3. Generate Bezier curve points
+            int curveSegments = 10;
+            Vector3[] points = new Vector3[curveSegments + 1];
+            for (int i = 0; i <= curveSegments; i++)
+            {
+                float t = i / (float)curveSegments;
+                points[i] = CalculateCubicBezierPoint(t, startPoint, cp1, cp2, endPoint);
+            }
+
+            // 4. Create and configure the LineRenderer
+            var edgeGo = new GameObject($"Edge_SelfLoop_{edge.Type}");
+            edgeGo.transform.SetParent(parent.transform, false);
+
+            var lr = edgeGo.AddComponent<LineRenderer>();
+            lr.positionCount = curveSegments + 1;
+            lr.SetPositions(points);
+            lr.useWorldSpace = false;
+            lr.startWidth = lr.endWidth = 0.04f;
+            lr.startColor = lr.endColor = Color.white;
+
+            // Apply Materials
+            bool isDashed = (edge.Type == DiagramEdgeTypes.INCLUDES_UML) || (edge.Type == DiagramEdgeTypes.EXTENDS_UML) || (edge.Type == DiagramEdgeTypes.DEPENDENCY);
+            if (isDashed)
+            {
+                lr.material = cachedDashedMaterial;
+                lr.textureMode = LineTextureMode.Tile;
+
+                float approxLength = Vector3.Distance(startPoint, cp1) + Vector3.Distance(cp1, cp2) + Vector3.Distance(cp2, endPoint);
+                Vector2 tiling = new Vector2(approxLength / 0.35f, 1f);
+
+                var block = new MaterialPropertyBlock();
+                block.SetVector("_MainTex_ST", new Vector4(tiling.x, tiling.y, 0f, 0f));
+                lr.SetPropertyBlock(block);
+            }
+            else
+            {
+                lr.material = cachedLineMaterial;
+                lr.textureMode = LineTextureMode.Stretch;
+            }
+
+            // 5. Spawn the Decorator
+            Vector3 finalDirection = (endPoint - points[curveSegments - 1]).normalized;
+            switch (edge.Type)
+            {
+                case DiagramEdgeTypes.AGGREGATES:
+                    SpawnEdgeDecorator(DiagramEdgeTypes.AGGREGATES, parent.transform, endPoint, finalDirection, 1f);
+                    break;
+                case DiagramEdgeTypes.COMPOSES:
+                    SpawnEdgeDecorator(DiagramEdgeTypes.COMPOSES, parent.transform, endPoint, finalDirection, 1f);
+                    break;
+                case DiagramEdgeTypes.GENERALIZES:
+                    SpawnEdgeDecorator(DiagramEdgeTypes.GENERALIZES, parent.transform, endPoint, finalDirection, -0.5f);
+                    break;
+                case DiagramEdgeTypes.INCLUDES_UML:
+                case DiagramEdgeTypes.EXTENDS_UML:
+                case DiagramEdgeTypes.DEPENDENCY:
+                case DiagramEdgeTypes.TRANSITIONS_TO:
+                    SpawnEdgeDecorator(DiagramEdgeTypes.INCLUDES_UML, parent.transform, endPoint, finalDirection, -0.4f);
+                    break;
+            }
+        }
+
+        private Vector3 CalculateCubicBezierPoint(float t, Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3)
+        {
+            Vector3 q0 = Vector3.Lerp(p0, p1, t);
+            Vector3 q1 = Vector3.Lerp(p1, p2, t);
+            Vector3 q2 = Vector3.Lerp(p2, p3, t);
+
+            Vector3 r0 = Vector3.Lerp(q0, q1, t);
+            Vector3 r1 = Vector3.Lerp(q1, q2, t);
+
+            return Vector3.Lerp(r0, r1, t); ;
+        }
         private void SpawnEdgeDecorator(string edgeType, Transform parent, Vector3 basePosition, Vector3 direction, float offset)
         {
             if (prefabsDictionary != null && prefabsDictionary.TryGetValue(edgeType, out GameObject prefab))

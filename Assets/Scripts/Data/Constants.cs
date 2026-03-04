@@ -115,6 +115,8 @@ namespace Assets.Scripts.Data
         public const string FORK = "UML_FORK";
         public const string JOIN = "UML_JOIN";
         public const string DECISION = "UML_DECISION";
+        public const string REQUIRED_INTERFACE = "UML_REQUIRED_INTERFACE";
+        public const string PROVIDED_INTERFACE = "UML_PROVIDED_INTERFACE";
     }
     public class DiagramEdgeTypes
     {

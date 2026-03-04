@@ -745,6 +745,7 @@ MonoBehaviour:
   statePrefab: {fileID: 6858957333937466753, guid: f1fff7b3da7d3434f822a38558c816b8, type: 3}
   initialPrefab: {fileID: 2777548603128956188, guid: 61541a696045246bf8c9de0636a8db74, type: 3}
   finalPrefab: {fileID: 4980904575788496955, guid: 3ad63f462ff164b9fb07edc12b7ecc65, type: 3}
+  providedInterfacePrefab: {fileID: 904908865400570217, guid: 568960ab8c14049a5bf1b6b94aeb1dae, type: 3}
   aggregationPrefab: {fileID: 2348603859151733759, guid: 784356de0aced4400ac4a21be420f72c, type: 3}
   compositionPrefab: {fileID: 2348603859151733759, guid: 259a964f9a4c0467581204fe241174d0, type: 3}
   generalizationPrefab: {fileID: 7725161297721261931, guid: 1424344ae3c8141edbd43419c0347023, type: 3}

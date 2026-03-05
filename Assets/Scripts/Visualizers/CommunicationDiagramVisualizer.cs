@@ -2,6 +2,7 @@ using Assets.Scripts.Data;
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using TMPro;
 
 namespace Assets.Scripts.Visualizers
 {
@@ -17,54 +18,129 @@ namespace Assets.Scripts.Visualizers
 
             var nodeObjects = new Dictionary<string, GameObject>();
 
-            foreach (var node in nodes.Where(n => n.Type != DiagramNodeTypes.DIAGRAM))
+            var parentToChildren = new Dictionary<string, List<NodeData>>();
+            var childToParent = new Dictionary<string, string>();
+            var nestedChildKeys = new HashSet<string>();
+
+            foreach (var edge in edges.Where(e => e.Type == DiagramEdgeTypes.NESTED))
             {
-                var nodeObj = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                nodeObj.name = node.Label ?? node.Key;
+                string pKey = ExtractKeyFromId(edge.From);
+                string cKey = ExtractKeyFromId(edge.To);
 
-                nodeObj.transform.SetParent(nodesParent.transform, false);
+                nestedChildKeys.Add(cKey);
+                childToParent[cKey] = pKey;
 
-                nodeObj.transform.localPosition = new Vector3(node.GetNodePosition().x, node.GetNodePosition().y + 0.4f, node.GetNodePosition().z);
+                if (!parentToChildren.ContainsKey(pKey))
+                    parentToChildren[pKey] = new List<NodeData>();
 
-                nodeObj.transform.localScale = Vector3.one * 0.6f;
-
-                if (nodeObj.TryGetComponent<Renderer>(out var rend))
-                {
-                    rend.material = cachedNodeMaterial;
-                    rend.material.color = Color.cyan;
-                }
-
-                nodeObjects[node.Key] = nodeObj;
+                var childNode = nodes.FirstOrDefault(n => n.Key == cKey);
+                if (childNode != null)
+                    parentToChildren[pKey].Add(childNode);
             }
 
-            foreach (var edge in edges)
-            {
-                string fromKey = ExtractKeyFromId(edge.From);
-                string toKey = ExtractKeyFromId(edge.To);
+            var rootDiagram = nodes.FirstOrDefault(n => n.Type == DiagramNodeTypes.DIAGRAM);
 
-                if (nodeObjects.TryGetValue(fromKey, out var a) && nodeObjects.TryGetValue(toKey, out var b))
+            int GetDepth(string nodeKey)
+            {
+                int depth = 0;
+                string current = nodeKey;
+                while (childToParent.ContainsKey(current))
                 {
-                    DrawEdge(edgesParent, a.transform.localPosition, b.transform.localPosition, edge.Key);
+                    current = childToParent[current];
+                    if (rootDiagram != null && current != rootDiagram.Key)
+                        depth++;
                 }
+                return depth;
             }
 
-            Debug.Log($"Rendered organized communication diagram inside {container.name}");
-        }
+            foreach (var node in nodes)
+            {
+                if (node == rootDiagram) continue;
 
-        private void DrawEdge(GameObject parent, Vector3 start, Vector3 end, string edgeKey)
-        {
-            var edgeGo = new GameObject($"Edge_{edgeKey}");
-            edgeGo.transform.SetParent(parent.transform, false);
+                int depth = GetDepth(node.Key);
+                float currentElevation = (depth + 1) * Y_ELEVATION;
 
-            var lr = edgeGo.AddComponent<LineRenderer>();
-            lr.positionCount = 2;
-            lr.useWorldSpace = false;
-            lr.SetPosition(0, start);
-            lr.SetPosition(1, end);
+                bool isActor = node.Type == DiagramNodeTypes.ACTOR;
 
-            lr.startWidth = lr.endWidth = 0.04f;
-            lr.material = Resources.Load<Material>("Materials/DefaultMat");
-            lr.startColor = lr.endColor = Color.black;
+                GameObject nodeContainer = new GameObject("Node_" + (node.Label ?? node.Key));
+                nodeContainer.transform.SetParent(nodesParent.transform, false);
+
+                float nodeWidth, nodeHeight;
+                Vector3 position;
+
+                if (isActor)
+                {
+                    nodeWidth = 2.5f;
+                    nodeHeight = 2.5f;
+                    position = new Vector3(node.GetNodePosition().x, node.GetNodePosition().y + currentElevation, node.GetNodePosition().z);
+                }
+                else
+                {
+                    float textWidth = MeasureText(node.Label ?? "", HEADER_FONT_SIZE, true);
+                    nodeWidth = Mathf.Max(textWidth + 4f, 6f);
+                    nodeHeight = 3.5f;
+                    position = new Vector3(node.GetNodePosition().x, node.GetNodePosition().y + currentElevation, node.GetNodePosition().z);
+                }
+
+                nodeContainer.transform.localPosition = position;
+
+                GameObject visualObj;
+                string prefabKey = isActor ? DiagramNodeTypes.ACTOR : node.Type;
+
+                if (prefabsDictionary != null && prefabsDictionary.TryGetValue(prefabKey, out GameObject prefab) && prefab != null)
+                {
+                    visualObj = Object.Instantiate(prefab, nodeContainer.transform);
+                    visualObj.name = "Background";
+                    visualObj.transform.localPosition = Vector3.zero;
+
+                    if (isActor)
+                        visualObj.transform.localScale = Vector3.one * nodeWidth;
+                    else
+                        visualObj.transform.localScale = new Vector3(nodeWidth, 0.2f, nodeHeight);
+
+                    foreach (var txt in visualObj.GetComponentsInChildren<TextMeshPro>()) Object.Destroy(txt.gameObject);
+                }
+                else
+                {
+                    PrimitiveType prim = isActor ? PrimitiveType.Cylinder : PrimitiveType.Cube;
+
+                    visualObj = GameObject.CreatePrimitive(prim);
+                    visualObj.transform.SetParent(nodeContainer.transform, false);
+                    visualObj.name = "Background";
+                    visualObj.transform.localPosition = Vector3.zero;
+
+                    if (isActor)
+                        visualObj.transform.localScale = Vector3.one * nodeWidth;
+                    else
+                        visualObj.transform.localScale = new Vector3(nodeWidth, 0.2f, nodeHeight);
+
+                    if (visualObj.TryGetComponent<Renderer>(out var rend))
+                    {
+                        rend.material = cachedNodeMaterial;
+                        if (isActor)
+                            rend.material.color = new Color(0.9f, 0.8f, 0.7f);
+                        else
+                            rend.material.color = new Color(0.7f, 0.85f, 0.9f);
+                    }
+                }
+
+                if (isActor)
+                {
+                    CreateTextLabel(nodeContainer.transform, node.Label, new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, -2.0f), Mathf.Max(nodeWidth, 8f), HEADER_FONT_SIZE, TextAlignmentOptions.Top, FontStyles.Bold);
+                }
+                else
+                {
+                    CreateTextLabel(nodeContainer.transform, node.Label, new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, 0), nodeWidth, HEADER_FONT_SIZE, TextAlignmentOptions.Center, FontStyles.Bold);
+                }
+
+                nodeObjects[node.Key] = nodeContainer;
+            }
+
+            var validEdges = edges.Where(e => e.Type != DiagramEdgeTypes.NESTED).ToList();
+            var selfLoops = validEdges.Where(e => ExtractKeyFromId(e.From) == ExtractKeyFromId(e.To));
+            var normalEdges = validEdges.Where(e => ExtractKeyFromId(e.From) != ExtractKeyFromId(e.To));
+
+            DrawDiagramEdges(selfLoops, nodeObjects, edgesParent, normalEdges);
         }
     }
 }

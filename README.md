@@ -1,114 +1,91 @@
-# UML Diagram Visualizer: Feature Checklist
+# UML Diagram Visualizer: Feature & Implementation Checklist
 
-This document tracks the implementation status of UML elements and features across the supported diagram types, based on standard UML specifications.
-
-## 1. Class Diagram
-
-**Status:** Core structural nodes and primary relationships implemented. Internal class features and advanced edge notations are missing.
-
-### Implemented
-
-- [x] **Class Nodes**: Basic rendering of classes.
-- [x] **Nesting / Inner Classes**: Hierarchical containment of nested classes.
-- [x] **Basic Associations**: Standard solid-line connections and self-loops.
-- [x] **Aggregation**: Directed relationships using the `AGGREGATES` prefab (hollow diamond).
-- [x] **Composition**: Directed relationships using the `COMPOSES` prefab (filled diamond).
-- [x] **Generalization**: Inheritance relationships using the `GENERALIZES` prefab (hollow triangle).
-
-### Todo
-
-- [ ] **Interfaces**: Distinct visual representation (e.g., `«interface»` stereotype or lollipop notation).
-- [ ] **Abstract Classes**: Italicized class name labels to denote abstraction.
-- [ ] **Attributes Compartment**: Displaying properties/fields inside the class node.
-- [ ] **Operations Compartment**: Displaying methods/functions inside the class node.
-- [ ] **Visibility Modifiers**: Prefixing attributes/methods with `+` (public), `-` (private), `#` (protected), or `~` (package).
-- [ ] **Multiplicity**: Edge labels representing instance limits (e.g., `1`, `0..1`, `*`, `1..*`).
-- [ ] **Edge Roles**: Text labels on edges to indicate how the associated classes interact.
+This document tracks the implementation status of UML elements, nodes, edges, and features across the supported diagram types within the Unity visualizer, based on standard UML specifications.
 
 ---
 
-## 2. Deployment Diagram
+## 1. Supported Diagrams
 
-**Status:** Foundation for nodes and basic topology implemented. Specific artifact routing and hardware/software differentiation are missing.
+### ✅ Implemented
 
-### Implemented
+- [x] **Class Diagram**
+- [x] **Deployment Diagram**
+- [x] **Package Diagram**
+- [x] **State Machine Diagram**
+- [x] **Use Case Diagram**
 
-- [x] **Deployment Nodes**: Basic 3D representations of nodes.
-- [x] **Node Nesting**: Hierarchical rendering for nodes containing components/other nodes.
-- [x] **Communication Paths**: Basic edges drawing connections between nodes.
+### 📝 To Implement
 
-### Todo
-
-- [ ] **Execution Environments vs. Devices**: Distinct visual stereotypes to separate hardware (devices) from software containers (execution environments).
-- [ ] **Artifacts**: Specific nodes representing physical files (e.g., `.jar`, `.dll`, scripts) using the document icon or `«artifact»`.
-- [ ] **Manifestation Relationships**: Dashed lines (`«manifest»`) showing which artifact implements which component.
-- [ ] **Deployment Relationships**: Dashed lines (`«deploy»`) specifying an artifact is deployed on a specific node.
-- [ ] **Communication Protocol Labels**: Labels on communication paths defining the protocol used (e.g., `«TCP/IP»`, `«HTTP»`).
-- [ ] **Deployment Specifications**: Nodes representing configuration files tied to a deployment.
+- [ ] **Activity Diagram**
+- [ ] **Component Diagram**
+- [ ] **Communication Diagram**
+- [ ] **Sequence Diagram**
 
 ---
 
-## 3. Package Diagram
+## 2. Nodes & Elements
 
-**Status:** Package containment and basic associations implemented. Explicit import/merge definitions and element visibility are missing.
+### ✅ Implemented
 
-### Implemented
+- [x] **Diagram Plane**: Base node representing the UML diagram used as a canvas for drawing elements or hosting nested sub-diagrams.
+- [x] **Class Node**: Node representing a class in a class diagram.
+- [x] **Interface Node**: Node representing an interface in a class diagram.
+- [x] **Enumeration Node**: Node representing an enumeration in a class diagram.
+- [x] **Method Node**: Node representing methods/operations inside a class.
+- [x] **Attribute Node**: Node representing attributes/properties inside a class.
+- [x] **Actor Node**: Stick-figure node representing an actor in a use case diagram.
+- [x] **Use Case Node**: Elliptical node representing a use case.
+- [x] **Package Node**: Folder-like node representing a package in a package diagram.
+- [x] **State Node**: Node representing a standard behavioral state in a state diagram.
+- [x] **Pseudostate Node (Basic)**: Nodes representing `initial` (start) or `final` (end) states.
+- [x] **Deployment Node**: 3D node representing a hardware/execution environment in a deployment diagram.
+- [x] **Component Node (Deployment)**: Node representing a software component residing on a deployment node.
+- [x] **Provided Interface**: Node representing an exposed interface in a deployment/component diagram.
 
-- [x] **Package Nodes**: Folder-like representations using the package prefab.
-- [x] **Nested Packages**: Recursive calculation allowing packages to contain sub-packages.
-- [x] **Basic Dependencies**: Simple edges connecting different packages.
+### 📝 To Implement
 
-### Todo
-
-- [ ] **Package Imports (`«import»`)**: Dashed dependencies indicating a public import of another package's contents.
-- [ ] **Package Merges (`«merge»`)**: Dashed dependencies indicating that contents are combined/extended.
-- [ ] **Package Access (`«access»`)**: Dashed dependencies indicating a private import.
-- [ ] **Fully Qualified Names**: Text labels displaying the hierarchy (e.g., `Parent::Child::Class`).
-- [ ] **Element Visibility**: Indicators showing if packaged elements are exported (public) or hidden (private) from importers.
-
----
-
-## 4. State Machine Diagram
-
-**Status:** Basic lifecycle (Start -> State -> End) implemented. Detailed transition logic, composite states, and complex routing are missing.
-
-### Implemented
-
-- [x] **State Nodes**: Basic visual representations of states.
-- [x] **Initial State**: Support for the solid black circle start node (`INITIAL` prefab).
-- [x] **Final State**: Support for the bullseye end node (`FINAL` prefab).
-- [x] **Basic Transitions**: Edges routing state changes.
-
-### Todo
-
-- [ ] **Transition Triggers**: Labels on edges indicating the event that causes the state change.
-- [ ] **Transition Guards**: Boolean conditions on edges evaluated before transitioning (e.g., `[condition]`).
-- [ ] **Transition Effects**: Actions executed during the transition (e.g., `/ action`).
-- [ ] **Internal Activities**: Compartment inside the state node for `entry /`, `do /`, and `exit /` behaviors.
-- [ ] **Choice Pseudostates**: Diamond nodes for dynamic conditional branching.
-- [ ] **Junction Pseudostates**: Filled circle nodes for static merging/branching.
-- [ ] **Fork and Join**: Heavy black bars indicating the splitting or synchronizing of concurrent threads.
-- [ ] **Composite States**: States that contain orthogonal regions or nested sub-states.
-- [ ] **History States**: Support for shallow `[H]` and deep `[H*]` state memory pseudostates.
+- [ ] **Parameter Node**: Sub-node representing an input parameter for a `Method Node`.
+- [ ] **Component Node (Package)**: Node representing a component natively within a package diagram.
+- [ ] **Artifact Node**: Node representing a deployable file/artifact (e.g., `.jar`, `.dll`).
+- [ ] **Composite State Node**: State node capable of containing nested sub-states or orthogonal regions.
+- [ ] **Advanced Pseudostates**: Explicit nodes for `choice`, `fork`, `join`, `junction`, and `entry/exit points` in state diagrams.
+- [ ] **State Internal Behaviors**: Dedicated compartments for `entry /`, `do /`, and `exit /` actions within a state node.
 
 ---
 
-## 5. Use Case Diagram
+## 3. Edges & Relationships
 
-**Status:** Core logic and associations implemented. System boundaries, general logic reuse, and actor multiplicities are missing.
+### ✅ Implemented
 
-### Implemented
+- [x] **Generalization**: Inheritance arrow.
+- [x] **Association**: Standard communication link.
+- [x] **Aggregation**: Hollow diamond arrow.
+- [x] **Composition**: Filled diamond arrow.
+- [x] **Dependency**: Standard dashed arrow.
+- [x] **Include (`«include»`)**: Used in Use Case diagrams.
+- [x] **Extend (`«extend»`)**: Used in Use Case diagrams.
+- [x] **Transition**: Directional state change edge.
+- [x] **Self-associated Edges**: Loops pointing back to the source node.
+- [x] **Provides**: Connecting components to provided interfaces.
 
-- [x] **Actors**: Dedicated stick-figure nodes (`ACTOR` prefab).
-- [x] **Use Cases**: Oval/elliptical nodes representing system functionalities.
-- [x] **Include Relationships**: Dashed arrows pointing to included use cases (`«include»`).
-- [x] **Extend Relationships**: Dashed arrows pointing to base use cases (`«extend»`), including extension point mapping.
-- [x] **Associations**: Solid lines connecting actors to the use cases they participate in.
+### 📝 To Implement
 
-### Todo
+- [ ] **Edge Labels**: General text labeling on edges for specific roles or names.
+- [ ] **Multiplicity**: Source and target instance notations (e.g., `1`, `0..*`) primarily for Class diagrams.
+- [ ] **Transition Labels**: Labels for state transitions specifying `[Guard]`, `Trigger`, and `/Effect`.
+- [ ] **Package Edge Notation**: Explicit stereotype labels like `«merge»`, `«import»`, `«access»`.
+- [ ] **Deployment Edge Notation**: Explicit stereotype labels like `«manifest»`, `«deploy»`.
 
-- [ ] **System Boundary**: A visual, labeled rectangular container grouping related use cases, separating them from external actors.
-- [ ] **Actor Generalization**: Inheritance relationships between actors (e.g., "Guest" generalizing to "Registered User").
-- [ ] **Use Case Generalization**: Inheritance relationships between use cases.
-- [ ] **Multiplicity on Associations**: Labels indicating how many instances of an actor can interact with the use case simultaneously.
-- [ ] **Extension Point Compartments**: Visual lists inside the Use Case node explicitly declaring available extension points.
+---
+
+## 4. Global Features & Mechanics
+
+### ✅ Implemented
+
+- [x] **Hierarchical Nesting**: Recursive parsing of `DiagramEdgeTypes.NESTED` to visually embed elements inside containers (e.g., packages inside packages, components inside nodes).
+- [x] **Edge Hub**: Routing mechanism that intercepts and organizes edges before they enter a node to prevent visual clutter.
+
+### 📝 To Implement
+
+- [ ] **Diagram Plane Scaling**: Automatic/default bounding box scaling when rendering multiple sub-graphs or disjointed graphs on the same plane.
+- [ ] **Universal Node Prefabs**: Transitioning from procedural primitive generation (e.g., `GameObject.CreatePrimitive`) to a fully Prefab-based system for all node types to unify aesthetics.

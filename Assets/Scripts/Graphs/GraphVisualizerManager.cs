@@ -16,6 +16,7 @@ namespace Assets.Scripts.Graphs
         [SerializeField] private GameObject initialPrefab;
         [SerializeField] private GameObject finalPrefab;
         [SerializeField] private GameObject providedInterfacePrefab;
+        [SerializeField] private GameObject requiredInterfacePrefab;
         [Header("Edge Type Ends Prefabs")]
         [SerializeField] private GameObject aggregationPrefab;
         [SerializeField] private GameObject compositionPrefab;
@@ -121,6 +122,7 @@ namespace Assets.Scripts.Graphs
             dict[DiagramNodeTypes.INITIAL] = initialPrefab;
             dict[DiagramNodeTypes.FINAL] = finalPrefab;
             dict[DiagramNodeTypes.PROVIDED_INTERFACE] = providedInterfacePrefab;
+            dict[DiagramNodeTypes.REQUIRED_INTERFACE] = requiredInterfacePrefab;
             dict[DiagramEdgeTypes.AGGREGATES] = aggregationPrefab;
             dict[DiagramEdgeTypes.COMPOSES] = compositionPrefab;
             dict[DiagramEdgeTypes.GENERALIZES] = generalizationPrefab;

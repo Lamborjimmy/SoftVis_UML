@@ -224,6 +224,12 @@ namespace Assets.Scripts.Visualizers
                     case DiagramEdgeTypes.TRANSITIONS_TO:
                         SpawnEdgeDecorator(DiagramEdgeTypes.INCLUDES_UML, parent.transform, endPoint, finalDirection, -0.4f);
                         break;
+                    case DiagramEdgeTypes.FLOWS_TO:
+                        SpawnEdgeDecorator(DiagramEdgeTypes.INCLUDES_UML, parent.transform, endPoint, finalDirection, -0.4f);
+                        break;
+                    case DiagramEdgeTypes.OBJECT_FLOW:
+                        SpawnEdgeDecorator(DiagramEdgeTypes.INCLUDES_UML, parent.transform, endPoint, finalDirection, -0.4f);
+                        break;
                 }
             }
         }

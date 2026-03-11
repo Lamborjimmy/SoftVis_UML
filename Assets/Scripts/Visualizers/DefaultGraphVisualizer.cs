@@ -44,7 +44,7 @@ namespace Assets.Scripts.Visualizers
 
                 if (nodeObjects.TryGetValue(fromKey, out var a) && nodeObjects.TryGetValue(toKey, out var b))
                 {
-                    DrawEdge(edgesParent, a, b, edge);
+                    //DrawEdge(edgesParent, a, b, edge);
                 }
             }
 

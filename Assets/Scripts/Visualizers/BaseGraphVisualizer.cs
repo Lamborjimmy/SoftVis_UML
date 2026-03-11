@@ -16,8 +16,6 @@ namespace Assets.Scripts.Visualizers
         protected Dictionary<string, GameObject> prefabsDictionary;
         private Dictionary<string, int> edgePairCounts = new Dictionary<string, int>();
 
-        protected abstract void DrawDiagramContent(GameObject container, List<NodeData> nodes, List<EdgeData> edges);
-
         [Header("Constants")]
         protected const float LABEL_FONT_SIZE = 4f;
         protected const float HEADER_FONT_SIZE = 5f;
@@ -25,6 +23,91 @@ namespace Assets.Scripts.Visualizers
         protected const float Y_ELEVATION = 0.1f;
         protected const float Y_ELEVATION_TEXT_OFFSET = 0.05f;
 
+        protected abstract void DrawDiagramContent(GameObject container, List<NodeData> nodes, List<EdgeData> edges);//TODO rename to CreateDiagramContent
+
+        #region Nesting Context
+        protected class NestingContext
+        {
+            public Dictionary<string, List<NodeData>> ParentToChildren { get; }
+            public Dictionary<string, string> ChildToParent { get; }
+            public HashSet<string> NestedChildKeys { get; }
+            public NodeData RootDiagram { get; }
+
+            public NestingContext(
+                Dictionary<string, List<NodeData>> parentToChildren,
+                Dictionary<string, string> childToParent,
+                HashSet<string> nestedChildKeys,
+                NodeData rootDiagram)
+            {
+                ParentToChildren = parentToChildren;
+                ChildToParent = childToParent;
+                NestedChildKeys = nestedChildKeys;
+                RootDiagram = rootDiagram;
+            }
+
+            public int GetDepth(string nodeKey)
+            {
+                int depth = 0;
+                string current = nodeKey;
+                while (ChildToParent.ContainsKey(current))
+                {
+                    current = ChildToParent[current];
+                    if (RootDiagram != null && current != RootDiagram.Key)
+                        depth++;
+                }
+                return depth;
+            }
+
+            public bool IsContainer(string nodeKey)
+            {
+                return ParentToChildren.ContainsKey(nodeKey) && ParentToChildren[nodeKey].Count > 0;
+            }
+        }
+
+        protected NestingContext BuildNestingHierarchy(List<NodeData> nodes, List<EdgeData> edges)
+        {
+            var parentToChildren = new Dictionary<string, List<NodeData>>();
+            var childToParent = new Dictionary<string, string>();
+            var nestedChildKeys = new HashSet<string>();
+            var nodeLookup = nodes.ToDictionary(n => n.Key);
+
+            foreach (var edge in edges.Where(e => e.Type == DiagramEdgeTypes.NESTED))
+            {
+                string parentKey = ExtractKeyFromId(edge.From);
+                string childKey = ExtractKeyFromId(edge.To);
+
+                nestedChildKeys.Add(childKey);
+                childToParent[childKey] = parentKey;
+
+                if (!parentToChildren.ContainsKey(parentKey))
+                    parentToChildren[parentKey] = new List<NodeData>();
+
+                if (nodeLookup.TryGetValue(childKey, out var childNode))
+                    parentToChildren[parentKey].Add(childNode);
+            }
+
+            var rootDiagram = nodes.FirstOrDefault(n => n.Type == DiagramNodeTypes.DIAGRAM && !nestedChildKeys.Contains(n.Key));
+
+            return new NestingContext(parentToChildren, childToParent, nestedChildKeys, rootDiagram);
+        }
+        #endregion
+
+        protected (GameObject nodesParent, GameObject edgesParent) CreateParentObjects(GameObject container)
+        {
+            GameObject nodesParent = new GameObject("Nodes");
+            GameObject edgesParent = new GameObject("Edges");
+            nodesParent.transform.SetParent(container.transform, false);
+            edgesParent.transform.SetParent(container.transform, false);
+            return (nodesParent, edgesParent);
+        }
+
+        protected void FilterAndRenderEdges(List<EdgeData> edges, Dictionary<string, GameObject> nodeObjects, Transform edgesParent)
+        {
+            var validEdges = edges.Where(e => e.Type != DiagramEdgeTypes.NESTED).ToList();
+            var selfLoops = validEdges.Where(e => ExtractKeyFromId(e.From) == ExtractKeyFromId(e.To));
+            var normalEdges = validEdges.Where(e => ExtractKeyFromId(e.From) != ExtractKeyFromId(e.To));
+            //            RenderAllEdges(selfLoops, nodeObjects, edgesParent, normalEdges);
+        }
         public void Initialize(Dictionary<string, GameObject> prefabs)
         {
             prefabsDictionary = prefabs;
@@ -42,56 +125,41 @@ namespace Assets.Scripts.Visualizers
 
         public void RenderGraph(GraphMetadata graph, GameObject container, List<NodeData> nodes, List<EdgeData> edges)
         {
-            if (nodes == null || nodes.Count == 0) return;
-
+            if (nodes == null || nodes.Count == 0)
+            {
+                Debug.LogWarning("[BaseVisualizer] No nodes to visualize.");
+                return;
+            }
             edgePairCounts.Clear();
-
             DrawDiagramContent(container, nodes, edges);
-
-            VisualizeDiagramPlane(container, nodes);
+            RenderDiagramBasePlane(container, nodes);
         }
 
-        private void VisualizeDiagramPlane(GameObject container, List<NodeData> nodes)
+        private void RenderDiagramBasePlane(GameObject container, List<NodeData> nodes)
         {
             var diagramNode = nodes.FirstOrDefault(n => n.Type == DiagramNodeTypes.DIAGRAM);
 
-            // Grab all the 3D models we just generated inside the container
             Renderer[] allRenderers = container.GetComponentsInChildren<Renderer>();
 
             if (allRenderers.Length == 0) return;
 
-            // Initialize the bounding box using the first valid renderer
             Bounds totalBounds = new Bounds(allRenderers[0].bounds.center, Vector3.zero);
 
-            // Encapsulate every visible object into our mathematical bounding box
             foreach (var rend in allRenderers)
             {
-                // Skip disabled renderers (like the invisible edge-routing "Background" boxes)
                 if (!rend.enabled) continue;
                 totalBounds.Encapsulate(rend.bounds);
             }
 
-            float padding = 5f;
+            float padding = 2.5f;
             float width = totalBounds.size.x + (padding * 2);
             float height = totalBounds.size.z + (padding * 2);
 
-            // Find the true center of the rendered objects in world space
             Vector3 center = new Vector3(totalBounds.center.x, -0.5f, totalBounds.center.z);
 
-            // Generate the Plane
-            GameObject plane = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            plane.name = diagramNode?.Label ?? "Diagram_Base";
-            plane.transform.SetParent(container.transform, false);
+            GameObject plane = CreatePrimitive(PrimitiveType.Cube, container.transform, diagramNode?.Label ?? "Diagram_Base", center, Quaternion.Euler(90, 0, 0), new Vector3(width, height, 1));
 
-            plane.transform.position = center;
-            plane.transform.localRotation = Quaternion.Euler(90, 0, 0);
-            plane.transform.localScale = new Vector3(width, height, 1);
-
-            if (plane.TryGetComponent<Renderer>(out var rendMat))
-            {
-                rendMat.material = cachedNodeMaterial;
-                rendMat.material.color = new Color(0.2f, 0.2f, 0.2f, 1.0f);
-            }
+            ApplyMaterialToSingle(plane, new Color(0.2f, 0.2f, 0.2f, 1.0f));
 
             Vector3 offset = new Vector3(-totalBounds.center.x, 0, -totalBounds.center.z);
 
@@ -99,6 +167,67 @@ namespace Assets.Scripts.Visualizers
                 child.position += offset;
         }
 
+        #region Material Applying
+        private void ApplyMaterialToSingle(GameObject obj, Color color)
+        {
+            if (obj.TryGetComponent<Renderer>(out var rend))
+            {
+                SetRendererMaterial(rend, color);
+            }
+        }
+
+        private void ApplyMaterialToHierarchy(GameObject obj, Color color)
+        {
+            foreach (var rend in obj.GetComponentsInChildren<Renderer>())
+            {
+                if (rend.enabled)
+                {
+                    SetRendererMaterial(rend, color);
+                }
+            }
+        }
+
+        private void SetRendererMaterial(Renderer rend, Color color)
+        {
+            rend.material = cachedNodeMaterial;
+            rend.material.color = color;
+        }
+
+        private void ApplyEdgeLineMaterial(LineRenderer lr, string edgeType, Vector3 startPoint, Vector3 endPoint)
+        {
+            bool isDashed = edgeType == DiagramEdgeTypes.INCLUDES_UML
+                         || edgeType == DiagramEdgeTypes.EXTENDS_UML
+                         || edgeType == DiagramEdgeTypes.DEPENDENCY;
+
+            if (isDashed)
+            {
+                lr.material = cachedDashedMaterial;
+                lr.textureMode = LineTextureMode.Tile;
+
+                float lineLength = Vector3.Distance(startPoint, endPoint);
+                float dashPeriodWorldUnits = 0.35f;
+
+                Vector2 tiling = new Vector2(lineLength / dashPeriodWorldUnits, 1f);
+
+                var block = new MaterialPropertyBlock();
+                block.SetVector("_MainTex_ST", new Vector4(tiling.x, tiling.y, 0f, 0f));
+                lr.SetPropertyBlock(block);
+            }
+            else
+            {
+                lr.material = cachedLineMaterial;
+                lr.textureMode = LineTextureMode.Stretch;
+            }
+        }
+        #endregion
+
+        #region Helpers
+        protected string ExtractKeyFromId(string id)//TODO rename to ExtractNodeKey
+        {
+            if (string.IsNullOrEmpty(id)) return "";
+            int slashIndex = id.LastIndexOf('/');
+            return slashIndex >= 0 ? id.Substring(slashIndex + 1) : id;
+        }
 
         private Texture2D CreateDashedTexture(int dashPixels = 24, int gapPixels = 12, int textureHeight = 8)
         {
@@ -121,189 +250,29 @@ namespace Assets.Scripts.Visualizers
             tex.Apply();
             return tex;
         }
+        #endregion
 
-        protected string ExtractKeyFromId(string id)
+        #region Node Rendering
+        private GameObject CreatePrimitive(PrimitiveType primitiveType, Transform parentTransform, string objectName, Vector3 position, Quaternion rotation, Vector3 scale)
         {
-            if (string.IsNullOrEmpty(id)) return "";
-            int slashIndex = id.LastIndexOf('/');
-            return slashIndex >= 0 ? id.Substring(slashIndex + 1) : id;
+            GameObject obj = GameObject.CreatePrimitive(primitiveType);
+            obj.transform.SetParent(parentTransform, false);
+            obj.name = objectName;
+            obj.transform.localPosition = position;
+            obj.transform.localRotation = rotation;
+            obj.transform.localScale = scale;
+            return obj;
         }
+        #endregion
 
-        protected void DrawEdge(GameObject parent, GameObject fromObj, GameObject toObj, EdgeData edge, bool drawDecorator = true)
-        {
-            if (fromObj == toObj)
-            {
-                DrawSelfLoop(parent, fromObj, edge);
-                return;
-            }
-            Vector3 startPoint = GetBorderPoint(fromObj, toObj.transform.position);
-            Vector3 endPoint = GetBorderPoint(toObj, fromObj.transform.position);
-
-            // --- PARALLEL EDGE OFFSET LOGIC ---
-            // Create a unique key for this pair of nodes regardless of direction
-            string pairKey = fromObj.GetInstanceID() < toObj.GetInstanceID()
-                ? $"{fromObj.GetInstanceID()}_{toObj.GetInstanceID()}"
-                : $"{toObj.GetInstanceID()}_{fromObj.GetInstanceID()}";
-
-            if (!edgePairCounts.ContainsKey(pairKey))
-                edgePairCounts[pairKey] = 0;
-
-            int count = edgePairCounts[pairKey];
-            edgePairCounts[pairKey]++;
-
-            // If there are multiple edges, push them perpendicularly apart
-            if (count > 0)
-            {
-                Vector3 dir = (endPoint - startPoint).normalized;
-                Vector3 perp = Vector3.Cross(dir, Vector3.up).normalized;
-
-                float offsetAmount = 0.8f * ((count + 1) / 2) * (count % 2 != 0 ? 1 : -1);
-
-                startPoint += perp * offsetAmount;
-                endPoint += perp * offsetAmount;
-            }
-
-            var edgeGo = new GameObject($"Edge_{edge.Type}");
-            edgeGo.transform.SetParent(parent.transform, false);
-
-            var lr = edgeGo.AddComponent<LineRenderer>();
-            lr.positionCount = 2;
-            lr.useWorldSpace = false;
-            lr.SetPosition(0, startPoint);
-            lr.SetPosition(1, endPoint);
-
-            lr.startWidth = lr.endWidth = 0.04f;
-            lr.startColor = lr.endColor = Color.white;
-
-            bool isDashed = (edge.Type == DiagramEdgeTypes.INCLUDES_UML) || (edge.Type == DiagramEdgeTypes.EXTENDS_UML) || (edge.Type == DiagramEdgeTypes.DEPENDENCY);
-
-            if (isDashed)
-            {
-                lr.material = cachedDashedMaterial;
-                lr.textureMode = LineTextureMode.Tile;
-
-                float lineLength = Vector3.Distance(startPoint, endPoint);
-                float dashPeriodWorldUnits = 0.35f;   // ← tweak this to change dash spacing
-
-                Vector2 tiling = new Vector2(lineLength / dashPeriodWorldUnits, 1f);
-
-                var block = new MaterialPropertyBlock();
-                block.SetVector("_MainTex_ST", new Vector4(tiling.x, tiling.y, 0f, 0f));
-                lr.SetPropertyBlock(block);
-            }
-            else
-            {
-                lr.material = cachedLineMaterial;
-                lr.textureMode = LineTextureMode.Stretch;
-            }
-
-            Vector3 finalDirection = (endPoint - startPoint).normalized;
-
-            if (drawDecorator)
-            {
-                switch (edge.Type)
-                {
-                    case DiagramEdgeTypes.AGGREGATES:
-                        SpawnEdgeDecorator(DiagramEdgeTypes.AGGREGATES, parent.transform, startPoint, finalDirection, 1f);
-                        break;
-                    case DiagramEdgeTypes.COMPOSES:
-                        SpawnEdgeDecorator(DiagramEdgeTypes.COMPOSES, parent.transform, startPoint, finalDirection, 1f);
-                        break;
-                    case DiagramEdgeTypes.GENERALIZES:
-                        SpawnEdgeDecorator(DiagramEdgeTypes.GENERALIZES, parent.transform, endPoint, finalDirection, -0.5f);
-                        break;
-                    case DiagramEdgeTypes.INCLUDES_UML:
-                        SpawnEdgeDecorator(DiagramEdgeTypes.INCLUDES_UML, parent.transform, endPoint, finalDirection, -0.3f);
-                        break;
-                    case DiagramEdgeTypes.EXTENDS_UML:
-                        SpawnEdgeDecorator(DiagramEdgeTypes.INCLUDES_UML, parent.transform, endPoint, finalDirection, -0.2f);
-                        break;
-                    case DiagramEdgeTypes.DEPENDENCY:
-                        SpawnEdgeDecorator(DiagramEdgeTypes.INCLUDES_UML, parent.transform, endPoint, finalDirection, -0.4f);
-                        break;
-                    case DiagramEdgeTypes.TRANSITIONS_TO:
-                        SpawnEdgeDecorator(DiagramEdgeTypes.INCLUDES_UML, parent.transform, endPoint, finalDirection, -0.4f);
-                        break;
-                    case DiagramEdgeTypes.FLOWS_TO:
-                        SpawnEdgeDecorator(DiagramEdgeTypes.INCLUDES_UML, parent.transform, endPoint, finalDirection, -0.4f);
-                        break;
-                    case DiagramEdgeTypes.OBJECT_FLOW:
-                        SpawnEdgeDecorator(DiagramEdgeTypes.INCLUDES_UML, parent.transform, endPoint, finalDirection, -0.4f);
-                        break;
-                }
-            }
-        }
-        protected void DrawBundledEdges(GameObject parent, List<EdgeData> groupedEdges, Dictionary<string, GameObject> nodeObjects)
-        {
-            if (groupedEdges.Count == 0) return;
-
-            // If only 1 edge in the group, draw it normally
-            if (groupedEdges.Count == 1)
-            {
-                var edge = groupedEdges[0];
-                if (nodeObjects.TryGetValue(ExtractKeyFromId(edge.From), out var a) && nodeObjects.TryGetValue(ExtractKeyFromId(edge.To), out var b))
-                {
-                    DrawEdge(parent, a, b, edge);
-                }
-                return;
-            }
-
-            // --- Multiple Edges: Create a Merge Hub ---
-            string toKey = ExtractKeyFromId(groupedEdges[0].To);
-            if (!nodeObjects.TryGetValue(toKey, out GameObject targetObj)) return;
-
-            // 1. Calculate the average position of all source nodes
-            Vector3 averageSourcePos = Vector3.zero;
-            List<GameObject> sourceObjs = new List<GameObject>();
-
-            foreach (var edge in groupedEdges)
-            {
-                if (nodeObjects.TryGetValue(ExtractKeyFromId(edge.From), out GameObject src))
-                {
-                    sourceObjs.Add(src);
-                    averageSourcePos += src.transform.position;
-                }
-            }
-
-            if (sourceObjs.Count == 0) return;
-            averageSourcePos /= sourceObjs.Count;
-
-            // 2. Determine the direction the edges are approaching from
-            Vector3 dirToSources = (averageSourcePos - targetObj.transform.position).normalized;
-            if (dirToSources == Vector3.zero) dirToSources = Vector3.forward;
-
-            // 3. Find the exact outer edge of the target node facing the incoming lines
-            Vector3 farTarget = targetObj.transform.position + (dirToSources * 1000f);
-            Vector3 borderPoint = GetBorderPoint(targetObj, farTarget);
-
-            // 4. Place the hub safely OUTSIDE the visual bounds of the node
-            float standoffDistance = 4.5f; // Hub will be exactly 2.5 units outside the border
-            Vector3 mergePoint = borderPoint + (dirToSources * standoffDistance);
-
-            // 5. Create a temporary invisible Hub object to act as a routing node
-            GameObject hubObj = new GameObject($"Hub_{toKey}_{groupedEdges[0].Type}");
-            hubObj.transform.position = mergePoint;
-            hubObj.transform.SetParent(parent.transform, false);
-
-            // 6. Draw lines from all sources to the Hub (drawDecorator = false)
-            foreach (var edge in groupedEdges)
-            {
-                if (nodeObjects.TryGetValue(ExtractKeyFromId(edge.From), out GameObject src))
-                {
-                    DrawEdge(parent, src, hubObj, edge, false);
-                }
-            }
-
-            // 7. Draw one final line from the Hub to the Target (drawDecorator = true)
-            DrawEdge(parent, hubObj, targetObj, groupedEdges[0], true);
-        }
-        protected void DrawDiagramEdges(IEnumerable<EdgeData> selfLoops, Dictionary<string, GameObject> nodeObjects, GameObject edgesParent, IEnumerable<EdgeData> normalEdges)
+        #region Edge Rendering
+        protected void DrawDiagramEdges(IEnumerable<EdgeData> selfLoops, Dictionary<string, GameObject> nodeObjects, GameObject edgesParent, IEnumerable<EdgeData> normalEdges)//TODO rename to RenderDiagramEdges and change edgesParent to Transform
         {
             foreach (var edge in selfLoops)
             {
                 if (nodeObjects.TryGetValue(ExtractKeyFromId(edge.From), out var a))
                 {
-                    DrawEdge(edgesParent, a, a, edge);
+                    RenderEdge(edgesParent.transform, a, a, edge);
                 }
             }
 
@@ -322,100 +291,123 @@ namespace Assets.Scripts.Visualizers
             });
 
             foreach (var group in edgeGroups)
-            {
-                DrawBundledEdges(edgesParent, group.ToList(), nodeObjects);
-            }
+                RenderMergeHubEdges(edgesParent.transform, group.ToList(), nodeObjects);
         }
-        protected string GetApproachDirection(Vector3 sourcePos, Vector3 targetPos)
+
+        private void RenderMergeHubEdges(Transform parent, List<EdgeData> groupedEdges, Dictionary<string, GameObject> nodeObjects)
+        {
+            if (groupedEdges.Count == 0) return;
+            if (groupedEdges.Count == 1)
+            {
+                var edge = groupedEdges[0];
+                if (nodeObjects.TryGetValue(ExtractKeyFromId(edge.From), out var a) && nodeObjects.TryGetValue(ExtractKeyFromId(edge.To), out var b))
+                    RenderEdge(parent, a, b, edge);
+                return;
+            }
+
+            string toKey = ExtractKeyFromId(groupedEdges[0].To);
+            if (!nodeObjects.TryGetValue(toKey, out GameObject targetNode)) return;
+
+            Vector3 averageSourcePos = CalculateAverageSourceEdgesPosition(groupedEdges, nodeObjects);
+            Vector3 dirToSources = (averageSourcePos - targetNode.transform.position).normalized;
+            if (dirToSources == Vector3.zero) dirToSources = Vector3.forward;
+
+            Vector3 farTarget = targetNode.transform.position + (dirToSources * 1000f);
+            Vector3 borderPoint = CalculateNodeBorderIntersection(targetNode, farTarget);
+            float standoffDistance = 4.5f;
+            Vector3 mergePoint = borderPoint + (dirToSources * standoffDistance);
+
+            CreateEdgeMergeHubGameObject(toKey, parent, groupedEdges, nodeObjects, targetNode, mergePoint);
+        }
+
+        private void RenderEdge(Transform parent, GameObject fromObj, GameObject toObj, EdgeData edge, bool drawDecorator = true)
+        {
+            if (fromObj == toObj)
+            {
+                RenderSelfLoopEdge(parent, fromObj, edge, drawDecorator);
+                return;
+            }
+            Vector3 startPoint = CalculateNodeBorderIntersection(fromObj, toObj.transform.position);
+            Vector3 endPoint = CalculateNodeBorderIntersection(toObj, fromObj.transform.position);
+            OffsetParallelEdges(fromObj, toObj, ref startPoint, ref endPoint);
+
+            GameObject edgeGo = CreateEdgeGameObject(edge.Type, parent, startPoint, endPoint);
+            Vector3 finalDirection = (endPoint - startPoint).normalized;
+            if (drawDecorator) AttachEdgeDecorator(edge.Type, edgeGo.transform, startPoint, endPoint, finalDirection);
+        }
+
+        private void RenderSelfLoopEdge(Transform parent, GameObject nodeObj, EdgeData edge, bool drawDecorator)
+        {
+            Vector3 topTarget = nodeObj.transform.position + Vector3.forward * 10f;
+            Vector3 rightTarget = nodeObj.transform.position + Vector3.right * 10f;
+
+            Vector3 startPoint = CalculateNodeBorderIntersection(nodeObj, topTarget);
+            Vector3 endPoint = CalculateNodeBorderIntersection(nodeObj, rightTarget);
+            float loopScale = 3.5f;
+            int curveSegments = 10;
+            Vector3[] edgePoints = CalculateCubicBezierPoints(curveSegments, startPoint, endPoint, loopScale);
+
+            GameObject edgeGo = CreateEdgeGameObject(edge.Type, parent, startPoint, endPoint, edgePoints, curveSegments + 1);
+            Vector3 finalDirection = (endPoint - edgePoints[curveSegments - 1]).normalized;
+            if (drawDecorator) AttachEdgeDecorator(edge.Type, edgeGo.transform, startPoint, endPoint, finalDirection);
+        }
+
+        private string GetApproachDirection(Vector3 sourcePos, Vector3 targetPos)
         {
             Vector3 dir = (sourcePos - targetPos).normalized;
-
             float angle = Mathf.Atan2(dir.z, dir.x) * Mathf.Rad2Deg;
 
             if (angle < 0) angle += 360f;
 
             int numOfSectors = 4;
             float degrees = 360 / numOfSectors;
-            Debug.Log(degrees);
             int sector = Mathf.RoundToInt(angle / degrees) % numOfSectors;
 
             return sector.ToString();
         }
-        private void DrawSelfLoop(GameObject parent, GameObject nodeObj, EdgeData edge)
+
+        private void CreateEdgeMergeHubGameObject(string toKey, Transform parent, List<EdgeData> groupedEdges, Dictionary<string, GameObject> nodeObjects, GameObject targetNode, Vector3 mergePoint)
         {
+            GameObject hubObj = new GameObject($"Hub_{toKey}_{groupedEdges[0].Type}");
+            hubObj.transform.position = mergePoint;
+            hubObj.transform.SetParent(parent.transform, false);
 
-            // 1.Create fake targets to start drawing from edges of the node
-            Vector3 topTarget = nodeObj.transform.position + Vector3.forward * 10f;
-            Vector3 rightTarget = nodeObj.transform.position + Vector3.right * 10f;
-
-            Vector3 startPoint = GetBorderPoint(nodeObj, topTarget);
-            Vector3 endPoint = GetBorderPoint(nodeObj, rightTarget);
-
-            // 2. Define Control Points 
-            float loopScale = 3.5f; // Increase this if the loop is too tight
-            Vector3 cp1 = startPoint + Vector3.forward * loopScale + Vector3.right * (loopScale * 0.5f);
-            Vector3 cp2 = endPoint + Vector3.right * loopScale + Vector3.forward * (loopScale * 0.5f);
-
-            // 3. Generate Bezier curve points
-            int curveSegments = 10;
-            Vector3[] points = new Vector3[curveSegments + 1];
-            for (int i = 0; i <= curveSegments; i++)
+            foreach (var edge in groupedEdges)
             {
-                float t = i / (float)curveSegments;
-                points[i] = CalculateCubicBezierPoint(t, startPoint, cp1, cp2, endPoint);
+                if (nodeObjects.TryGetValue(ExtractKeyFromId(edge.From), out GameObject src))
+                {
+                    RenderEdge(hubObj.transform, src, hubObj, edge, false);
+                }
             }
+            RenderEdge(hubObj.transform, hubObj, targetNode, groupedEdges[0], true);
+        }
 
-            // 4. Create and configure the LineRenderer
-            var edgeGo = new GameObject($"Edge_SelfLoop_{edge.Type}");
-            edgeGo.transform.SetParent(parent.transform, false);
-
-            var lr = edgeGo.AddComponent<LineRenderer>();
-            lr.positionCount = curveSegments + 1;
-            lr.SetPositions(points);
-            lr.useWorldSpace = false;
-            lr.startWidth = lr.endWidth = 0.04f;
-            lr.startColor = lr.endColor = Color.white;
-
-            // Apply Materials
-            bool isDashed = (edge.Type == DiagramEdgeTypes.INCLUDES_UML) || (edge.Type == DiagramEdgeTypes.EXTENDS_UML) || (edge.Type == DiagramEdgeTypes.DEPENDENCY);
-            if (isDashed)
+        private Vector3 CalculateAverageSourceEdgesPosition(List<EdgeData> groupedEdges, Dictionary<string, GameObject> nodeObjects)
+        {
+            Vector3 averageSourcePos = Vector3.zero;
+            List<GameObject> sourceNodeEdges = new List<GameObject>();
+            foreach (var edge in groupedEdges)
             {
-                lr.material = cachedDashedMaterial;
-                lr.textureMode = LineTextureMode.Tile;
-
-                float approxLength = Vector3.Distance(startPoint, cp1) + Vector3.Distance(cp1, cp2) + Vector3.Distance(cp2, endPoint);
-                Vector2 tiling = new Vector2(approxLength / 0.35f, 1f);
-
-                var block = new MaterialPropertyBlock();
-                block.SetVector("_MainTex_ST", new Vector4(tiling.x, tiling.y, 0f, 0f));
-                lr.SetPropertyBlock(block);
+                if (nodeObjects.TryGetValue(ExtractKeyFromId(edge.From), out GameObject srcEdge))
+                {
+                    sourceNodeEdges.Add(srcEdge);
+                    averageSourcePos += srcEdge.transform.position;
+                }
             }
-            else
+            return averageSourcePos / sourceNodeEdges.Count;
+        }
+
+        private Vector3[] CalculateCubicBezierPoints(int segments, Vector3 startPoint, Vector3 endPoint, float loopScale)
+        {
+            Vector3 controlPoint1 = startPoint + Vector3.forward * loopScale + Vector3.right * loopScale;
+            Vector3 controlPoint2 = endPoint + Vector3.right * loopScale + Vector3.forward * loopScale;
+            Vector3[] points = new Vector3[segments + 1];
+            for (int i = 0; i <= segments; i++)
             {
-                lr.material = cachedLineMaterial;
-                lr.textureMode = LineTextureMode.Stretch;
+                float t = i / (float)segments;
+                points[i] = CalculateCubicBezierPoint(t, startPoint, controlPoint1, controlPoint2, endPoint);
             }
-
-            // 5. Spawn the Decorator
-            Vector3 finalDirection = (endPoint - points[curveSegments - 1]).normalized;
-            switch (edge.Type)
-            {
-                case DiagramEdgeTypes.AGGREGATES:
-                    SpawnEdgeDecorator(DiagramEdgeTypes.AGGREGATES, parent.transform, endPoint, finalDirection, 1f);
-                    break;
-                case DiagramEdgeTypes.COMPOSES:
-                    SpawnEdgeDecorator(DiagramEdgeTypes.COMPOSES, parent.transform, endPoint, finalDirection, 1f);
-                    break;
-                case DiagramEdgeTypes.GENERALIZES:
-                    SpawnEdgeDecorator(DiagramEdgeTypes.GENERALIZES, parent.transform, endPoint, finalDirection, -0.5f);
-                    break;
-                case DiagramEdgeTypes.INCLUDES_UML:
-                case DiagramEdgeTypes.EXTENDS_UML:
-                case DiagramEdgeTypes.DEPENDENCY:
-                case DiagramEdgeTypes.TRANSITIONS_TO:
-                    SpawnEdgeDecorator(DiagramEdgeTypes.INCLUDES_UML, parent.transform, endPoint, finalDirection, -0.4f);
-                    break;
-            }
+            return points;
         }
 
         private Vector3 CalculateCubicBezierPoint(float t, Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3)
@@ -427,56 +419,48 @@ namespace Assets.Scripts.Visualizers
             Vector3 r0 = Vector3.Lerp(q0, q1, t);
             Vector3 r1 = Vector3.Lerp(q1, q2, t);
 
-            return Vector3.Lerp(r0, r1, t); ;
+            return Vector3.Lerp(r0, r1, t);
         }
-        private void SpawnEdgeDecorator(string edgeType, Transform parent, Vector3 basePosition, Vector3 direction, float offset)
-        {
-            if (prefabsDictionary != null && prefabsDictionary.TryGetValue(edgeType, out GameObject prefab))
-            {
-                GameObject obj = Object.Instantiate(prefab, parent);
-                obj.transform.localPosition = basePosition + (direction * offset);
-                obj.transform.localRotation = Quaternion.LookRotation(direction);
-            }
-        }
-        private Vector3 GetBorderPoint(GameObject classObj, Vector3 targetPosition)
-        {
-            Transform background = classObj.transform.Find("Background");
-            if (background == null)
-            {
-                return classObj.transform.position;
-            }
 
-            Vector3 targetLocal = classObj.transform.InverseTransformPoint(targetPosition);
+        private Vector3 CalculateNodeBorderIntersection(GameObject nodeObj, Vector3 targetPosition)
+        {
+            Transform visualsContainer = nodeObj.transform.Find("Background");
+            if (visualsContainer == null) return nodeObj.transform.position;
+            Vector3 targetLocal = nodeObj.transform.InverseTransformPoint(targetPosition);
             Vector3 dir = targetLocal.normalized;
-            if (dir == Vector3.zero) return classObj.transform.position;
+            if (dir == Vector3.zero) return nodeObj.transform.position;
+            Renderer[] renderers = visualsContainer.GetComponentsInChildren<Renderer>();
+            Bounds localBounds = CalculateNodeLocalBounds(renderers, nodeObj, visualsContainer);
+            Vector3 localHit = dir * CalculateMinValue(localBounds, dir);
+            float offset = 0.03f;
+            localHit += localHit.normalized * offset;
+            return nodeObj.transform.TransformPoint(localHit);
+        }
 
-            // 1. Calculate the true visual bounds using Renderers instead of just localScale
-            Renderer[] renderers = background.GetComponentsInChildren<Renderer>();
-            Bounds localBounds = new Bounds(Vector3.zero, Vector3.zero);
-
+        private Bounds CalculateNodeLocalBounds(Renderer[] renderers, GameObject nodeObj, Transform visualsContainer)
+        {
+            Bounds bounds = new Bounds(Vector3.zero, Vector3.zero);
             if (renderers.Length > 0)
             {
-                // Initialize bounds with the first renderer's true local position
-                localBounds = new Bounds(classObj.transform.InverseTransformPoint(renderers[0].bounds.center), Vector3.zero);
+                bounds = new Bounds(nodeObj.transform.InverseTransformPoint(renderers[0].bounds.center), Vector3.zero);
                 foreach (var r in renderers)
                 {
-                    // Encapsulate true world bounds converted to local space
-                    localBounds.Encapsulate(classObj.transform.InverseTransformPoint(r.bounds.min));
-                    localBounds.Encapsulate(classObj.transform.InverseTransformPoint(r.bounds.max));
+                    bounds.Encapsulate(nodeObj.transform.InverseTransformPoint(r.bounds.min));
+                    bounds.Encapsulate(nodeObj.transform.InverseTransformPoint(r.bounds.max));
                 }
             }
             else
             {
-                // Fallback for empty objects without renderers
-                localBounds = new Bounds(Vector3.zero, background.localScale);
+                bounds = new Bounds(Vector3.zero, visualsContainer.localScale);
             }
+            return bounds;
+        }
 
-            Vector3 minLocal = localBounds.min;
-            Vector3 maxLocal = localBounds.max;
-
+        private float CalculateMinValue(Bounds bounds, Vector3 dir)
+        {
+            Vector3 minLocal = bounds.min;
+            Vector3 maxLocal = bounds.max;
             float tMin = float.MaxValue;
-
-            // 2. Intersect ray (from center 0,0,0) with the true local AABB
             if (Mathf.Abs(dir.x) > 0.0001f)
             {
                 float tx = (dir.x > 0 ? maxLocal.x : minLocal.x) / dir.x;
@@ -494,21 +478,100 @@ namespace Assets.Scripts.Visualizers
                 float ty = (dir.y > 0 ? maxLocal.y : minLocal.y) / dir.y;
                 if (ty > 0.001f) tMin = Mathf.Min(tMin, ty);
             }
-
-            if (tMin == float.MaxValue || tMin <= 0.001f)
-            {
-                return classObj.transform.position;
-            }
-
-            Vector3 localHit = dir * tMin;
-            localHit += localHit.normalized * 0.03f; // Slight offset outward to prevent clipping
-
-            return classObj.transform.TransformPoint(localHit);
+            return tMin;
         }
+
+        private void OffsetParallelEdges(GameObject fromObj, GameObject toObj, ref Vector3 startPoint, ref Vector3 endPoint)
+        {
+            string pairKey = fromObj.GetInstanceID() < toObj.GetInstanceID()
+                ? $"{fromObj.GetInstanceID()}_{toObj.GetInstanceID()}"
+                : $"{toObj.GetInstanceID()}_{fromObj.GetInstanceID()}";
+            if (!edgePairCounts.ContainsKey(pairKey)) edgePairCounts[pairKey] = 0;
+            int count = edgePairCounts[pairKey];
+            edgePairCounts[pairKey]++;
+
+            if (count > 0)
+            {
+                Vector3 dir = (endPoint - startPoint).normalized;
+                Vector3 perp = Vector3.Cross(dir, Vector3.up).normalized;
+
+                float offsetAmount = 0.8f * ((count + 1) / 2) * (count % 2 != 0 ? 1 : -1);
+
+                startPoint += perp * offsetAmount;
+                endPoint += perp * offsetAmount;
+            }
+        }
+
+        private GameObject CreateEdgeGameObject(string edgeType, Transform parent, Vector3 startPoint, Vector3 endPoint, Vector3[] points = null, int posCount = 2)
+        {
+            var edgeGo = new GameObject($"Edge_{edgeType}");
+            edgeGo.transform.SetParent(parent, false);
+
+            edgeGo.transform.position = Vector3.zero;
+            edgeGo.transform.rotation = Quaternion.identity;
+
+            var lr = edgeGo.AddComponent<LineRenderer>();
+            lr.positionCount = posCount;
+            lr.useWorldSpace = false;
+
+            lr.startWidth = lr.endWidth = 0.04f;
+            lr.startColor = lr.endColor = Color.white;
+            if (points != null)
+                lr.SetPositions(points);
+            else
+            {
+                lr.SetPosition(0, startPoint);
+                lr.SetPosition(1, endPoint);
+            }
+            ApplyEdgeLineMaterial(lr, edgeType, startPoint, endPoint);
+
+            return edgeGo;
+        }
+
+        private void AttachEdgeDecorator(string edgeType, Transform parent, Vector3 startPoint, Vector3 endPoint, Vector3 direction)
+        {
+            switch (edgeType)
+            {
+                case DiagramEdgeTypes.AGGREGATES:
+                    SpawnDecoratorPrefab(DiagramEdgeTypes.AGGREGATES, parent, startPoint, direction, 1f);
+                    break;
+                case DiagramEdgeTypes.COMPOSES:
+                    SpawnDecoratorPrefab(DiagramEdgeTypes.COMPOSES, parent, startPoint, direction, 1f);
+                    break;
+                case DiagramEdgeTypes.GENERALIZES:
+                    SpawnDecoratorPrefab(DiagramEdgeTypes.GENERALIZES, parent, endPoint, direction, -0.5f);
+                    break;
+                case DiagramEdgeTypes.INCLUDES_UML:
+                case DiagramEdgeTypes.EXTENDS_UML:
+                    float extOffset = edgeType == DiagramEdgeTypes.EXTENDS_UML ? -0.2f : -0.3f;
+                    SpawnDecoratorPrefab(DiagramEdgeTypes.INCLUDES_UML, parent, endPoint, direction, extOffset);
+                    break;
+
+                case DiagramEdgeTypes.DEPENDENCY:
+                case DiagramEdgeTypes.TRANSITIONS_TO:
+                case DiagramEdgeTypes.FLOWS_TO:
+                case DiagramEdgeTypes.OBJECT_FLOW:
+                    SpawnDecoratorPrefab(DiagramEdgeTypes.INCLUDES_UML, parent, endPoint, direction, -0.4f);
+                    break;
+            }
+        }
+
+        private void SpawnDecoratorPrefab(string edgeType, Transform parent, Vector3 basePosition, Vector3 direction, float offset)
+        {
+            if (prefabsDictionary != null && prefabsDictionary.TryGetValue(edgeType, out GameObject prefab))
+            {
+                GameObject obj = Object.Instantiate(prefab, parent);
+                obj.transform.position = basePosition + (direction * offset);
+                obj.transform.rotation = Quaternion.LookRotation(direction);
+            }
+        }
+        #endregion
+
+        #region Text Rendering (Original Methods Preserved)
         protected GameObject CreateTextLabel(Transform parent, string text, Vector3 localPos, float width, float fontSize, TextAlignmentOptions textAlignment = TextAlignmentOptions.Center, FontStyles fontStyle = FontStyles.Normal)
         {
-            GameObject textObj = new GameObject("Text_" + text);
-            textObj.transform.SetParent(parent, false);
+            var textObj = new GameObject("Text_" + text);
+            textObj.transform.SetParent(parent.transform, false);
             textObj.transform.localPosition = localPos;
             textObj.transform.localRotation = Quaternion.Euler(90, 0, 0);
 
@@ -539,6 +602,7 @@ namespace Assets.Scripts.Visualizers
             measurer.overflowMode = TextOverflowModes.Overflow;
             measurer.gameObject.SetActive(false);
         }
+
         protected float MeasureText(string content, float fontSize, bool isBold = false)
         {
             if (string.IsNullOrEmpty(content)) return 0f;
@@ -550,5 +614,6 @@ namespace Assets.Scripts.Visualizers
             float width = measurer.preferredWidth;
             return width;
         }
+        #endregion
     }
 }

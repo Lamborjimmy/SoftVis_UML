@@ -24,7 +24,6 @@ namespace Assets.Scripts.Visualizers
         protected const float Y_ELEVATION_TEXT_OFFSET = 0.05f;
 
         protected abstract void DrawDiagramContent(GameObject container, List<NodeData> nodes, List<EdgeData> edges);//TODO rename to CreateDiagramContent
-
         #region Nesting Context
         protected class NestingContext
         {
@@ -168,7 +167,7 @@ namespace Assets.Scripts.Visualizers
         }
 
         #region Material Applying
-        private void ApplyMaterialToSingle(GameObject obj, Color color)
+        protected void ApplyMaterialToSingle(GameObject obj, Color color)
         {
             if (obj.TryGetComponent<Renderer>(out var rend))
             {
@@ -253,6 +252,21 @@ namespace Assets.Scripts.Visualizers
         #endregion
 
         #region Node Rendering
+        protected GameObject CreateEmptyGameObject(Transform parentTransform, string name, Vector3 position)
+        {
+            GameObject gameObject = new GameObject(name);
+            gameObject.transform.SetParent(parentTransform);
+            gameObject.transform.localPosition = position;
+            return gameObject;
+        }
+        protected GameObject CreateBackgroundGameObject(Transform parentTransform)
+        {
+            GameObject background = new GameObject("Background");
+            background.transform.SetParent(parentTransform, false);
+            background.transform.localPosition = Vector3.zero;
+            background.transform.localScale = Vector3.one;
+            return background;
+        }
         private GameObject CreatePrimitive(PrimitiveType primitiveType, Transform parentTransform, string objectName, Vector3 position, Quaternion rotation, Vector3 scale)
         {
             GameObject obj = GameObject.CreatePrimitive(primitiveType);
@@ -262,6 +276,22 @@ namespace Assets.Scripts.Visualizers
             obj.transform.localRotation = rotation;
             obj.transform.localScale = scale;
             return obj;
+        }
+        protected GameObject CreateNodeGameObject(string nodeType, Transform parentTransform, float width, float height)
+        {
+            GameObject visualObject;
+            if (prefabsDictionary != null && prefabsDictionary.TryGetValue(nodeType, out GameObject prefab))
+            {
+                visualObject = Object.Instantiate(prefab, parentTransform);
+                visualObject.name = "Visuals";
+                visualObject.transform.localPosition = Vector3.zero;
+                visualObject.transform.localScale = new Vector3(width, 0.2f, height);
+            }
+            else
+            {
+                visualObject = CreatePrimitive(PrimitiveType.Cube, parentTransform, "Background", Vector3.zero, Quaternion.identity, new Vector3(width, 0.2f, height));
+            }
+            return visualObject;
         }
         #endregion
 

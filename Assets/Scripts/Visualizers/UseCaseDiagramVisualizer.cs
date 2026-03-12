@@ -68,7 +68,8 @@ namespace Assets.Scripts.Visualizers
         private void BuildActorNode(GameObject nodeContainer, NodeData node)
         {
             float textWidth = MeasureText(node.Label, HEADER_FONT_SIZE, true);
-            CreateNodeGameObject(DiagramNodeTypes.ACTOR, nodeContainer.transform, 1f, 1f, true);
+            GameObject backgroundGroup = CreateEmptyGameObject(nodeContainer.transform, "Background", Vector3.zero);
+            CreateNodeGameObject(DiagramNodeTypes.ACTOR, backgroundGroup.transform, 1f, 1f, true);
             CreateTextLabel(nodeContainer.transform, node.Label, new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, 2f), textWidth + 3f, HEADER_FONT_SIZE, TextAlignmentOptions.Center, FontStyles.Bold);
         }
 

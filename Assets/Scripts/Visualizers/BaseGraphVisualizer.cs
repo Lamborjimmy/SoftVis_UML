@@ -267,7 +267,7 @@ namespace Assets.Scripts.Visualizers
             background.transform.localScale = Vector3.one;
             return background;
         }
-        private GameObject CreatePrimitive(PrimitiveType primitiveType, Transform parentTransform, string objectName, Vector3 position, Quaternion rotation, Vector3 scale)
+        protected GameObject CreatePrimitive(PrimitiveType primitiveType, Transform parentTransform, string objectName, Vector3 position, Quaternion rotation, Vector3 scale)
         {
             GameObject obj = GameObject.CreatePrimitive(primitiveType);
             obj.transform.SetParent(parentTransform, false);
@@ -277,7 +277,45 @@ namespace Assets.Scripts.Visualizers
             obj.transform.localScale = scale;
             return obj;
         }
-        protected GameObject CreateNodeGameObject(string nodeType, Transform parentTransform, float width, float height)
+        protected void GetRecursiveBounds(
+            string parentKey,
+            Dictionary<string, List<NodeData>> parentToChildren,
+            out float minX, out float maxX, out float minZ, out float maxZ,
+            float childPaddingX = 0f, float childPaddingZ = 0f)
+        {
+            minX = minZ = float.MaxValue;
+            maxX = maxZ = float.MinValue;
+
+            if (!parentToChildren.ContainsKey(parentKey)) return;
+
+            foreach (var child in parentToChildren[parentKey])
+            {
+                Vector3 pos = child.GetNodePosition();
+                float childMinX = pos.x;
+                float childMaxX = pos.x;
+                float childMinZ = pos.z;
+                float childMaxZ = pos.z;
+
+                if (parentToChildren.ContainsKey(child.Key) && parentToChildren[child.Key].Count > 0)
+                {
+                    GetRecursiveBounds(child.Key, parentToChildren, out float nestedMinX, out float nestedMaxX, out float nestedMinZ, out float nestedMaxZ, childPaddingX, childPaddingZ);
+
+                    if (nestedMinX != float.MaxValue)
+                    {
+                        childMinX = Mathf.Min(childMinX, nestedMinX - childPaddingX);
+                        childMaxX = Mathf.Max(childMaxX, nestedMaxX + childPaddingX);
+                        childMinZ = Mathf.Min(childMinZ, nestedMinZ - childPaddingZ);
+                        childMaxZ = Mathf.Max(childMaxZ, nestedMaxZ + childPaddingZ);
+                    }
+                }
+
+                minX = Mathf.Min(minX, childMinX);
+                maxX = Mathf.Max(maxX, childMaxX);
+                minZ = Mathf.Min(minZ, childMinZ);
+                maxZ = Mathf.Max(maxZ, childMaxZ);
+            }
+        }
+        protected GameObject CreateNodeGameObject(string nodeType, Transform parentTransform, float width, float height, bool useUniformScale = false)
         {
             GameObject visualObject;
             if (prefabsDictionary != null && prefabsDictionary.TryGetValue(nodeType, out GameObject prefab))
@@ -285,7 +323,10 @@ namespace Assets.Scripts.Visualizers
                 visualObject = Object.Instantiate(prefab, parentTransform);
                 visualObject.name = "Visuals";
                 visualObject.transform.localPosition = Vector3.zero;
-                visualObject.transform.localScale = new Vector3(width, 0.2f, height);
+                if (useUniformScale)
+                    visualObject.transform.localScale = Vector3.one * width;
+                else
+                    visualObject.transform.localScale = new Vector3(width, 0.2f, height);
             }
             else
             {

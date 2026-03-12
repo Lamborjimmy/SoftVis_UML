@@ -748,6 +748,7 @@ MonoBehaviour:
   finalPrefab: {fileID: 4980904575788496955, guid: 3ad63f462ff164b9fb07edc12b7ecc65, type: 3}
   providedInterfacePrefab: {fileID: 904908865400570217, guid: 568960ab8c14049a5bf1b6b94aeb1dae, type: 3}
   requiredInterfacePrefab: {fileID: 80236813278369543, guid: 2bc46bb69aa8143d9a8adcf97ced5dc9, type: 3}
+  useCasePrefab: {fileID: 3301963167325703388, guid: 14ed81312050f497989387bf1964d9f3, type: 3}
   aggregationPrefab: {fileID: 2348603859151733759, guid: 784356de0aced4400ac4a21be420f72c, type: 3}
   compositionPrefab: {fileID: 2348603859151733759, guid: 259a964f9a4c0467581204fe241174d0, type: 3}
   generalizationPrefab: {fileID: 7725161297721261931, guid: 1424344ae3c8141edbd43419c0347023, type: 3}

@@ -22,7 +22,7 @@ namespace Assets.Scripts.Visualizers
             var selfLoops = validEdges.Where(e => ExtractKeyFromId(e.From) == ExtractKeyFromId(e.To));
             var normalEdges = validEdges.Where(e => ExtractKeyFromId(e.From) != ExtractKeyFromId(e.To));
 
-            DrawDiagramEdges(selfLoops, nodeObjects, edgesParent, normalEdges);
+            FilterAndRenderEdges(edges, nodeObjects, edgesParent.transform);
         }
 
         private Dictionary<string, GameObject> BuildNodes(GameObject nodesParent, List<NodeData> nodes, NestingContext ctx)

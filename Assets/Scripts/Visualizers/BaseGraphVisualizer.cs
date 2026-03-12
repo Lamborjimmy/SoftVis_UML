@@ -105,7 +105,7 @@ namespace Assets.Scripts.Visualizers
             var validEdges = edges.Where(e => e.Type != DiagramEdgeTypes.NESTED).ToList();
             var selfLoops = validEdges.Where(e => ExtractKeyFromId(e.From) == ExtractKeyFromId(e.To));
             var normalEdges = validEdges.Where(e => ExtractKeyFromId(e.From) != ExtractKeyFromId(e.To));
-            //            RenderAllEdges(selfLoops, nodeObjects, edgesParent, normalEdges);
+            DrawDiagramEdges(selfLoops, nodeObjects, edgesParent.gameObject, normalEdges);
         }
         public void Initialize(Dictionary<string, GameObject> prefabs)
         {

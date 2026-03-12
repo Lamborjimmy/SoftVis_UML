@@ -11,6 +11,7 @@ namespace Assets.Scripts.Graphs
     {
         [Header("Node Type Prefabs")]
         [SerializeField] private GameObject actorPrefab;
+        [SerializeField] private GameObject classPrefab;
         [SerializeField] private GameObject packagePrefab;
         [SerializeField] private GameObject statePrefab;
         [SerializeField] private GameObject initialPrefab;
@@ -117,6 +118,9 @@ namespace Assets.Scripts.Graphs
         {
             Dictionary<string, GameObject> dict = new Dictionary<string, GameObject>();
             dict[DiagramNodeTypes.ACTOR] = actorPrefab;
+            dict[DiagramNodeTypes.CLASS] = classPrefab;
+            dict[DiagramNodeTypes.INTERFACE] = classPrefab;
+            dict[DiagramNodeTypes.ENUMERATION] = classPrefab;
             dict[DiagramNodeTypes.PACKAGE] = packagePrefab;
             dict[DiagramNodeTypes.STATE] = statePrefab;
             dict[DiagramNodeTypes.INITIAL] = initialPrefab;

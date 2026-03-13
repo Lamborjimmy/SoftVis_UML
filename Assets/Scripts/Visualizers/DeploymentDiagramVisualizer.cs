@@ -54,7 +54,7 @@ namespace Assets.Scripts.Visualizers
             GameObject backgroundGroup = CreateEmptyGameObject(nodeContainer.transform, "Background", Vector3.zero);
             GameObject visualsObj = CreateNodeGameObject(node.Type, backgroundGroup.transform, width, height);
 
-            ApplyMaterialToSingle(visualsObj, GetNodeColor(node.Type));
+            ApplyMaterialToHierarchy(visualsObj, GetNodeColor(node.Type));
 
             float textZ = (height / 2f) - 1.5f;
             CreateTextLabel(backgroundGroup.transform, GetStereotype(node.Type), new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, textZ), width, LABEL_FONT_SIZE, TextAlignmentOptions.Top);
@@ -68,7 +68,7 @@ namespace Assets.Scripts.Visualizers
             GameObject backgroundGroup = CreateEmptyGameObject(nodeContainer.transform, "Background", Vector3.zero);
             GameObject visualsObj = CreateNodeGameObject(node.Type, backgroundGroup.transform, 1.0f, 1.0f, true);
 
-            ApplyMaterialToSingle(visualsObj, new Color(0.9f, 0.8f, 0.9f));
+            ApplyMaterialToHierarchy(visualsObj, new Color(0.9f, 0.8f, 0.9f));
             CreateTextLabel(backgroundGroup.transform, node.GetNodeName(), new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, -1.5f), 8f, HEADER_FONT_SIZE, TextAlignmentOptions.Top, FontStyles.Bold);
         }
 
@@ -83,7 +83,7 @@ namespace Assets.Scripts.Visualizers
             GameObject backgroundGroup = CreateEmptyGameObject(nodeContainer.transform, "Background", Vector3.zero);
             GameObject visualsObj = CreateNodeGameObject(node.Type, backgroundGroup.transform, width, height);
 
-            ApplyMaterialToSingle(visualsObj, GetNodeColor(node.Type));
+            ApplyMaterialToHierarchy(visualsObj, GetNodeColor(node.Type));
 
             CreateTextLabel(backgroundGroup.transform, GetStereotype(node.Type), new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, 0.5f), width, LABEL_FONT_SIZE, TextAlignmentOptions.Center);
             CreateTextLabel(backgroundGroup.transform, node.GetNodeName(), new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, 0.5f - LINE_HEIGHT), width, HEADER_FONT_SIZE, TextAlignmentOptions.Center, FontStyles.Bold);

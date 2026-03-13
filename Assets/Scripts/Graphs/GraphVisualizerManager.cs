@@ -123,6 +123,8 @@ namespace Assets.Scripts.Graphs
             dict[DiagramNodeTypes.INTERFACE] = classPrefab;
             dict[DiagramNodeTypes.ENUMERATION] = classPrefab;
             dict[DiagramNodeTypes.LIFELINE] = classPrefab;
+            dict[DiagramNodeTypes.NODE] = classPrefab;
+            dict[DiagramNodeTypes.COMPONENT] = classPrefab;
             dict[DiagramNodeTypes.PACKAGE] = packagePrefab;
             dict[DiagramNodeTypes.STATE] = statePrefab;
             dict[DiagramNodeTypes.INITIAL] = initialPrefab;

@@ -70,7 +70,7 @@ namespace Assets.Scripts.Visualizers
             float textWidth = MeasureText(node.Label, HEADER_FONT_SIZE, true);
             GameObject backgroundGroup = CreateEmptyGameObject(nodeContainer.transform, "Background", Vector3.zero);
             CreateNodeGameObject(DiagramNodeTypes.ACTOR, backgroundGroup.transform, 1f, 1f, true);
-            CreateTextLabel(nodeContainer.transform, node.Label, new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, 2f), textWidth + 3f, HEADER_FONT_SIZE, TextAlignmentOptions.Center, FontStyles.Bold);
+            CreateTextLabel(backgroundGroup.transform, node.Label, new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, 2f), textWidth + 3f, HEADER_FONT_SIZE, TextAlignmentOptions.Center, FontStyles.Bold);
         }
 
         private void BuildUseCaseNode(GameObject nodeContainer, NodeData node, Dictionary<string, List<string>> extensionPointsMap)
@@ -95,7 +95,7 @@ namespace Assets.Scripts.Visualizers
             GameObject nodeVisualsObj = CreateNodeGameObject(node.Type, backgroundGroup.transform, ovalWidth, ovalHeight);
 
             ApplyMaterialToSingle(nodeVisualsObj, new Color(0.75f, 0.95f, 0.75f));
-            CreateTextLabel(nodeContainer.transform, labelText, new Vector3(0, Y_ELEVATION * 2f + Y_ELEVATION_TEXT_OFFSET, 0), ovalWidth, LABEL_FONT_SIZE);
+            CreateTextLabel(backgroundGroup.transform, labelText, new Vector3(0, Y_ELEVATION * 2f + Y_ELEVATION_TEXT_OFFSET, 0), ovalWidth, LABEL_FONT_SIZE);
 
         }
     }

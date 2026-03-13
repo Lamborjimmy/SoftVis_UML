@@ -46,7 +46,7 @@ namespace Assets.Scripts.Visualizers
 
             GameObject backgroundGroup = CreateEmptyGameObject(nodeContainer.transform, "Background", Vector3.zero);
             CreateNodeGameObject(node.Type, backgroundGroup.transform, nodeWidth, nodeHeight);
-            CreateTextLabel(nodeContainer.transform, node.Label, new Vector3(0, Y_ELEVATION * 2 + Y_ELEVATION_TEXT_OFFSET, 0), nodeWidth, HEADER_FONT_SIZE, TextAlignmentOptions.Center);
+            CreateTextLabel(backgroundGroup.transform, node.Label, new Vector3(0, Y_ELEVATION * 2 + Y_ELEVATION_TEXT_OFFSET, 0), nodeWidth, HEADER_FONT_SIZE, TextAlignmentOptions.Center);
 
         }
     }

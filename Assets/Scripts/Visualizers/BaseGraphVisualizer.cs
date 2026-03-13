@@ -175,7 +175,7 @@ namespace Assets.Scripts.Visualizers
             }
         }
 
-        private void ApplyMaterialToHierarchy(GameObject obj, Color color)
+        protected void ApplyMaterialToHierarchy(GameObject obj, Color color)
         {
             foreach (var rend in obj.GetComponentsInChildren<Renderer>())
             {

@@ -62,7 +62,7 @@ namespace Assets.Scripts.Visualizers
                 int depth = GetDepth(node.Key);
                 float currentElevation = (depth + 1) * Y_ELEVATION;
 
-                GameObject nodeContainer = new GameObject("Node_" + (node.Label ?? node.Key));
+                GameObject nodeContainer = new GameObject("Node_" + (node.GetNodeName() ?? node.Key));
                 nodeContainer.transform.SetParent(nodesParent.transform, false);
 
                 bool isContainer = parentToChildren.TryGetValue(node.Key, out var children) && children.Count > 0;
@@ -89,7 +89,7 @@ namespace Assets.Scripts.Visualizers
                 }
                 else
                 {
-                    float textWidth = MeasureText(node.Label, HEADER_FONT_SIZE, true);
+                    float textWidth = MeasureText(node.GetNodeName(), HEADER_FONT_SIZE, true);
                     nodeWidth = Mathf.Max(textWidth + 3f, 6f);
                     nodeHeight = 4f;
 
@@ -153,7 +153,7 @@ namespace Assets.Scripts.Visualizers
                 float textZ = (nodeHeight / 2f) - (currentTabHeight / 2f) - 1.5f;
                 Vector3 textPos = new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, textZ);
 
-                CreateTextLabel(nodeContainer.transform, node.Label, textPos, nodeWidth, HEADER_FONT_SIZE, TextAlignmentOptions.Top);
+                CreateTextLabel(nodeContainer.transform, node.GetNodeName(), textPos, nodeWidth, HEADER_FONT_SIZE, TextAlignmentOptions.Top);
 
                 nodeObjects[node.Key] = nodeContainer;
             }

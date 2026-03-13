@@ -30,17 +30,11 @@ namespace Assets.Scripts.Data
     {
         [JsonProperty("_from")]
         public string From;
-        [JsonProperty("_id")]
-        public string Id;
         [JsonProperty("_key")]
         public string Key;
-        [JsonProperty("_rev")]
-        public string Rev;
         [JsonProperty("_to")]
         public string To;
 
-        [JsonProperty("graph_id")]
-        public string GraphId;
         [JsonProperty("properties")]
         public Dictionary<string, object> Propertieps;
         [JsonProperty("type")]
@@ -49,16 +43,8 @@ namespace Assets.Scripts.Data
     [Serializable]
     public class NodeData
     {
-        [JsonProperty("_id")]
-        public string Id;
         [JsonProperty("_key")]
         public string Key;
-        [JsonProperty("_rev")]
-        public string Rev;
-        [JsonProperty("graph_id")]
-        public string GraphId;
-        [JsonProperty("label")]
-        public string Label;
         [JsonProperty("properties")]
         public Dictionary<string, object> Properties;
         [JsonProperty("type")]
@@ -78,6 +64,12 @@ namespace Assets.Scripts.Data
                 }
             }
             return Vector3.zero;
+        }
+        public string GetNodeName()
+        {
+            if (Properties != null && Properties.TryGetValue("name", out object nameObj))
+                return nameObj?.ToString() ?? string.Empty;
+            return string.Empty;
         }
     }
     [Serializable]

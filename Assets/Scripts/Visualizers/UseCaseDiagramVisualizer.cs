@@ -24,7 +24,7 @@ namespace Assets.Scripts.Visualizers
                 if (node == nesting.RootDiagram) continue;
                 int depth = nesting.GetDepth(node.Key);
                 float currentElevation = (depth + 1) * Y_ELEVATION;
-                string nodeLabel = "Node_" + (node.Label ?? node.Key);
+                string nodeLabel = "Node_" + (node.GetNodeName() ?? node.Key);
                 Vector3 nodePosition = new Vector3(node.GetNodePosition().x, node.GetNodePosition().y + currentElevation, node.GetNodePosition().z);
                 GameObject nodeGameObject = CreateEmptyGameObject(nodesParent.transform, nodeLabel, nodePosition);
                 if (nesting.IsContainer(node.Key))
@@ -48,7 +48,7 @@ namespace Assets.Scripts.Visualizers
                 .GroupBy(e => ExtractKeyFromId(e.To))
                 .ToDictionary(
                     g => g.Key,
-                    g => g.Select(e => nodes.FirstOrDefault(n => n.Key == ExtractKeyFromId(e.From))?.Label ?? "Unknown").ToList()
+                    g => g.Select(e => nodes.FirstOrDefault(n => n.Key == ExtractKeyFromId(e.From))?.GetNodeName() ?? "Unknown").ToList()
                 );
         }
         private void BuildContainerNode(GameObject nodeContainer, NodeData node, NestingContext nesting, float currentElevation)
@@ -63,25 +63,25 @@ namespace Assets.Scripts.Visualizers
             Vector3 scale = new Vector3(width, Y_ELEVATION, height);
             GameObject backgroundGroup = CreatePrimitive(PrimitiveType.Cube, nodeContainer.transform, "Background", Vector3.zero, Quaternion.identity, scale);
             ApplyMaterialToSingle(backgroundGroup, new Color(0.0f, 0.2f, 0.9f, 0.8f));
-            CreateTextLabel(nodeContainer.transform, node.Label, new Vector3(0, (Y_ELEVATION / 2f) + 0.1f, (height / 2f) - 1.2f), width, HEADER_FONT_SIZE, TextAlignmentOptions.Center, FontStyles.Bold);
+            CreateTextLabel(nodeContainer.transform, node.GetNodeName(), new Vector3(0, (Y_ELEVATION / 2f) + 0.1f, (height / 2f) - 1.2f), width, HEADER_FONT_SIZE, TextAlignmentOptions.Center, FontStyles.Bold);
         }
         private void BuildActorNode(GameObject nodeContainer, NodeData node)
         {
-            float textWidth = MeasureText(node.Label, HEADER_FONT_SIZE, true);
+            float textWidth = MeasureText(node.GetNodeName(), HEADER_FONT_SIZE, true);
             GameObject backgroundGroup = CreateEmptyGameObject(nodeContainer.transform, "Background", Vector3.zero);
             CreateNodeGameObject(DiagramNodeTypes.ACTOR, backgroundGroup.transform, 1f, 1f, true);
-            CreateTextLabel(backgroundGroup.transform, node.Label, new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, 2f), textWidth + 3f, HEADER_FONT_SIZE, TextAlignmentOptions.Center, FontStyles.Bold);
+            CreateTextLabel(backgroundGroup.transform, node.GetNodeName(), new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, 2f), textWidth + 3f, HEADER_FONT_SIZE, TextAlignmentOptions.Center, FontStyles.Bold);
         }
 
         private void BuildUseCaseNode(GameObject nodeContainer, NodeData node, Dictionary<string, List<string>> extensionPointsMap)
         {
-            float textWidth = MeasureText(node.Label, HEADER_FONT_SIZE, true);
+            float textWidth = MeasureText(node.GetNodeName(), HEADER_FONT_SIZE, true);
 
-            string labelText = node.Label;
+            string labelText = node.GetNodeName();
             int lineCount = 1;
             if (extensionPointsMap.TryGetValue(node.Key, out List<string> points))
             {
-                labelText = $"<b>{node.Label}</b>\n<size=80%>extension points</size>";
+                labelText = $"<b>{node.GetNodeName()}</b>\n<size=80%>extension points</size>";
                 foreach (var p in points) labelText += $"\n<size=70%>{p}</size>";
                 lineCount = 2 + points.Count;
             }

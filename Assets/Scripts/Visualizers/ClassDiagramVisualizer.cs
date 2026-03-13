@@ -48,7 +48,7 @@ namespace Assets.Scripts.Visualizers
             int memberCount = members?.Count ?? 0;
             var (totalX, totalZ) = CalculateClassDimensions(node, members, memberCount);
 
-            string nodeLabel = "Node_" + (node.Label ?? node.Key);
+            string nodeLabel = "Node_" + (node.GetNodeName() ?? node.Key);
             Vector3 nodePosition = new Vector3(node.GetNodePosition().x, node.GetNodePosition().y + Y_ELEVATION, node.GetNodePosition().z);
             GameObject nodeGameObject = CreateEmptyGameObject(nodesParent.transform, nodeLabel, nodePosition);
             GameObject backgroundGroup = CreateEmptyGameObject(nodeGameObject.transform, "Background", Vector3.zero);
@@ -67,7 +67,7 @@ namespace Assets.Scripts.Visualizers
 
         private (float totalX, float totalZ) CalculateClassDimensions(NodeData node, List<NodeData> members, int memberCount)
         {
-            float maxTextWidth = MeasureText(node.Label ?? "", HEADER_FONT_SIZE, true);
+            float maxTextWidth = MeasureText(node.GetNodeName() ?? "", HEADER_FONT_SIZE, true);
             float totalZ;
 
             if (node.Type == DiagramNodeTypes.ENUMERATION || node.Type == DiagramNodeTypes.INTERFACE)
@@ -87,8 +87,8 @@ namespace Assets.Scripts.Visualizers
                 foreach (var m in members)
                 {
                     string displayText = m.Type == DiagramNodeTypes.METHOD
-                        ? "+ " + m.Label + "()"
-                        : "- " + m.Label + " : " + m.Properties["type_name"];
+                        ? "+ " + m.GetNodeName() + "()"
+                        : "- " + m.GetNodeName() + " : " + m.Properties["type_name"];
 
                     float w = MeasureText(displayText, LABEL_FONT_SIZE, false);
                     if (w > maxTextWidth) maxTextWidth = w;
@@ -103,7 +103,7 @@ namespace Assets.Scripts.Visualizers
         {
             float currentZ = (totalZ / 2f) - (PADDING_Z / 2f);
 
-            CreateTextLabel(classTransform, node.Label, new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, currentZ), totalX, HEADER_FONT_SIZE, TextAlignmentOptions.Center, FontStyles.Bold);
+            CreateTextLabel(classTransform, node.GetNodeName(), new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, currentZ), totalX, HEADER_FONT_SIZE, TextAlignmentOptions.Center, FontStyles.Bold);
 
             if (node.Type == DiagramNodeTypes.ENUMERATION || node.Type == DiagramNodeTypes.INTERFACE)
             {
@@ -119,8 +119,8 @@ namespace Assets.Scripts.Visualizers
                     currentZ -= LINE_HEIGHT;
 
                     string memberString = member.Type == DiagramNodeTypes.METHOD
-                        ? "+ " + member.Label + "()"
-                        : "- " + member.Label + ":" + member.Properties["type_name"];
+                        ? "+ " + member.GetNodeName() + "()"
+                        : "- " + member.GetNodeName() + ":" + member.Properties["type_name"];
 
                     CreateTextLabel(classTransform, memberString, new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, currentZ), totalX, LABEL_FONT_SIZE, TextAlignmentOptions.Left);
                 }

@@ -20,7 +20,7 @@ namespace Assets.Scripts.Visualizers
             foreach (var node in nodes.Where(n => n.Type != DiagramNodeTypes.DIAGRAM))
             {
                 var nodeObj = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                nodeObj.name = node.Label ?? node.Key;
+                nodeObj.name = node.GetNodeName() ?? node.Key;
 
                 nodeObj.transform.SetParent(nodesParent.transform, false);
 

@@ -156,7 +156,7 @@ namespace Assets.Scripts.Visualizers
 
             Vector3 center = new Vector3(totalBounds.center.x, -0.5f, totalBounds.center.z);
 
-            GameObject plane = CreatePrimitive(PrimitiveType.Cube, container.transform, diagramNode?.Label ?? "Diagram_Base", center, Quaternion.Euler(90, 0, 0), new Vector3(width, height, 1));
+            GameObject plane = CreatePrimitive(PrimitiveType.Cube, container.transform, diagramNode?.GetNodeName() ?? "Diagram_Base", center, Quaternion.Euler(90, 0, 0), new Vector3(width, height, 1));
 
             ApplyMaterialToSingle(plane, new Color(0.2f, 0.2f, 0.2f, 1.0f));
 

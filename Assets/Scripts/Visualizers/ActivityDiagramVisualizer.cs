@@ -206,7 +206,7 @@ namespace Assets.Scripts.Visualizers
 
                 bool isContainer = parentToChildren.TryGetValue(node.Key, out var children) && children.Count > 0;
 
-                GameObject nodeContainer = new GameObject("Node_" + (node.Label ?? node.Key));
+                GameObject nodeContainer = new GameObject("Node_" + (node.GetNodeName() ?? node.Key));
                 nodeContainer.transform.SetParent(nodesParent.transform, false);
 
                 float nodeWidth, nodeHeight;
@@ -259,7 +259,7 @@ namespace Assets.Scripts.Visualizers
                 }
                 else
                 {
-                    float textWidth = MeasureText(node.Label ?? "", HEADER_FONT_SIZE, true);
+                    float textWidth = MeasureText(node.GetNodeName() ?? "", HEADER_FONT_SIZE, true);
                     nodeWidth = Mathf.Max(textWidth + 2f, 3f);
                     nodeHeight = 2f;
                     position = new Vector3(basePos.x, basePos.y + currentElevation, basePos.z);
@@ -332,17 +332,17 @@ namespace Assets.Scripts.Visualizers
                 {
                     float textZ = (nodeHeight / 2f) - 1.5f;
                     CreateTextLabel(nodeContainer.transform, stereotype, new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, textZ), nodeWidth - 2f, LABEL_FONT_SIZE, TextAlignmentOptions.TopLeft);
-                    CreateTextLabel(nodeContainer.transform, node.Label, new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, textZ - LINE_HEIGHT), nodeWidth - 2f, HEADER_FONT_SIZE, TextAlignmentOptions.TopLeft, FontStyles.Bold);
+                    CreateTextLabel(nodeContainer.transform, node.GetNodeName(), new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, textZ - LINE_HEIGHT), nodeWidth - 2f, HEADER_FONT_SIZE, TextAlignmentOptions.TopLeft, FontStyles.Bold);
                 }
                 else if (isContainer)
                 {
                     float textZ = (nodeHeight / 2f) - 1.5f;
-                    CreateTextLabel(nodeContainer.transform, node.Label, new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, textZ - LINE_HEIGHT), nodeWidth, HEADER_FONT_SIZE, TextAlignmentOptions.Top, FontStyles.Bold);
+                    CreateTextLabel(nodeContainer.transform, node.GetNodeName(), new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, textZ - LINE_HEIGHT), nodeWidth, HEADER_FONT_SIZE, TextAlignmentOptions.Top, FontStyles.Bold);
                 }
                 else if (isDecision || isForkJoin) { }
                 else if (!isInitial && !isFinal)
                 {
-                    CreateTextLabel(nodeContainer.transform, node.Label, new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, 0), nodeWidth, HEADER_FONT_SIZE, TextAlignmentOptions.Center, FontStyles.Bold);
+                    CreateTextLabel(nodeContainer.transform, node.GetNodeName(), new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, 0), nodeWidth, HEADER_FONT_SIZE, TextAlignmentOptions.Center, FontStyles.Bold);
                 }
 
                 nodeObjects[node.Key] = nodeContainer;

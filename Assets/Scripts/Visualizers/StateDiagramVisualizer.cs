@@ -19,7 +19,7 @@ namespace Assets.Scripts.Visualizers
             foreach (var node in nodes)
             {
                 if (node.Type == DiagramNodeTypes.DIAGRAM) continue;
-                string nodeLabel = "Node_" + (node.Label ?? node.Key);
+                string nodeLabel = "Node_" + (node.GetNodeName() ?? node.Key);
                 Vector3 nodePosition = new Vector3(node.GetNodePosition().x, node.GetNodePosition().y + Y_ELEVATION, node.GetNodePosition().z);
                 GameObject nodeGameObject = CreateEmptyGameObject(nodesParent.transform, nodeLabel, nodePosition);
                 if (node.Type == DiagramNodeTypes.PSEUDOSTATE)
@@ -32,21 +32,21 @@ namespace Assets.Scripts.Visualizers
         }
         private void BuildPseudostateNode(GameObject nodeContainer, NodeData node)
         {
-            string prefabKey = node.Label == "initial" ? DiagramNodeTypes.INITIAL : DiagramNodeTypes.FINAL;
+            string prefabKey = node.GetNodeName() == "initial" ? DiagramNodeTypes.INITIAL : DiagramNodeTypes.FINAL;
             GameObject backgroundGroup = CreateEmptyGameObject(nodeContainer.transform, "Background", Vector3.zero);
             CreateNodeGameObject(prefabKey, backgroundGroup.transform, 1f, 1f, true);
         }
 
         private void BuildStateNode(GameObject nodeContainer, NodeData node)
         {
-            float textWidth = MeasureText(node.Label, HEADER_FONT_SIZE, true);
+            float textWidth = MeasureText(node.GetNodeName(), HEADER_FONT_SIZE, true);
 
             float nodeWidth = Mathf.Max(textWidth, 4f);
             float nodeHeight = 2.5f;
 
             GameObject backgroundGroup = CreateEmptyGameObject(nodeContainer.transform, "Background", Vector3.zero);
             CreateNodeGameObject(node.Type, backgroundGroup.transform, nodeWidth, nodeHeight);
-            CreateTextLabel(backgroundGroup.transform, node.Label, new Vector3(0, Y_ELEVATION * 2 + Y_ELEVATION_TEXT_OFFSET, 0), nodeWidth, HEADER_FONT_SIZE, TextAlignmentOptions.Center);
+            CreateTextLabel(backgroundGroup.transform, node.GetNodeName(), new Vector3(0, Y_ELEVATION * 2 + Y_ELEVATION_TEXT_OFFSET, 0), nodeWidth, HEADER_FONT_SIZE, TextAlignmentOptions.Center);
 
         }
     }

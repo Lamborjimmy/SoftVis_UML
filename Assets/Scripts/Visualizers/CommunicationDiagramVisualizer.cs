@@ -62,7 +62,7 @@ namespace Assets.Scripts.Visualizers
 
                 bool isActor = node.Type == DiagramNodeTypes.ACTOR;
 
-                GameObject nodeContainer = new GameObject("Node_" + (node.Label ?? node.Key));
+                GameObject nodeContainer = new GameObject("Node_" + (node.GetNodeName() ?? node.Key));
                 nodeContainer.transform.SetParent(nodesParent.transform, false);
 
                 float nodeWidth, nodeHeight;
@@ -76,7 +76,7 @@ namespace Assets.Scripts.Visualizers
                 }
                 else
                 {
-                    float textWidth = MeasureText(node.Label ?? "", HEADER_FONT_SIZE, true);
+                    float textWidth = MeasureText(node.GetNodeName() ?? "", HEADER_FONT_SIZE, true);
                     nodeWidth = Mathf.Max(textWidth + 4f, 6f);
                     nodeHeight = 3.5f;
                     position = new Vector3(node.GetNodePosition().x, node.GetNodePosition().y + currentElevation, node.GetNodePosition().z);
@@ -126,11 +126,11 @@ namespace Assets.Scripts.Visualizers
 
                 if (isActor)
                 {
-                    CreateTextLabel(nodeContainer.transform, node.Label, new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, -2.0f), Mathf.Max(nodeWidth, 8f), HEADER_FONT_SIZE, TextAlignmentOptions.Top, FontStyles.Bold);
+                    CreateTextLabel(nodeContainer.transform, node.GetNodeName(), new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, -2.0f), Mathf.Max(nodeWidth, 8f), HEADER_FONT_SIZE, TextAlignmentOptions.Top, FontStyles.Bold);
                 }
                 else
                 {
-                    CreateTextLabel(nodeContainer.transform, node.Label, new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, 0), nodeWidth, HEADER_FONT_SIZE, TextAlignmentOptions.Center, FontStyles.Bold);
+                    CreateTextLabel(nodeContainer.transform, node.GetNodeName(), new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, 0), nodeWidth, HEADER_FONT_SIZE, TextAlignmentOptions.Center, FontStyles.Bold);
                 }
 
                 nodeObjects[node.Key] = nodeContainer;

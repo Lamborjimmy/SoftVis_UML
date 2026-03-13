@@ -28,12 +28,8 @@ namespace Assets.Scripts.Visualizers
                 Vector3 nodePosition = new Vector3(node.GetNodePosition().x, node.GetNodePosition().y + currentElevation, node.GetNodePosition().z);
                 GameObject nodeGameObject = CreateEmptyGameObject(nodesParent.transform, nodeLabel, nodePosition);
                 if (nesting.IsContainer(node.Key))
-                {
                     BuildContainerNode(nodeGameObject, node, nesting, currentElevation);
-                    nodeObjects[node.Key] = nodeGameObject;
-                    continue;
-                }
-                if (node.Type == DiagramNodeTypes.ACTOR)
+                else if (node.Type == DiagramNodeTypes.ACTOR)
                     BuildActorNode(nodeGameObject, node);
                 else if (node.Type == DiagramNodeTypes.USECASE)
                     BuildUseCaseNode(nodeGameObject, node, extensionPointsMap);
@@ -54,16 +50,21 @@ namespace Assets.Scripts.Visualizers
         private void BuildContainerNode(GameObject nodeContainer, NodeData node, NestingContext nesting, float currentElevation)
         {
             GetRecursiveBounds(node.Key, nesting.ParentToChildren, out float minX, out float maxX, out float minZ, out float maxZ);
-            float paddingX = 6.0f;//TODO make this padding same in all diagrams and add it to the base visualizer
-            float paddingZ = 4.0f;//TODO make this padding same in all diagrams and add it to the base visualizer
+
+            float paddingX = 6.0f;
+            float paddingZ = 4.0f;
             float width = (maxX - minX) + paddingX * 2;
             float height = (maxZ - minZ) + paddingZ * 2;
-            Vector3 center = new Vector3((minX + maxX) / 2f, node.GetNodePosition().y + currentElevation - (Y_ELEVATION / 2f), (minZ + maxZ) / 2f);
-            nodeContainer.transform.localPosition = center;
-            Vector3 scale = new Vector3(width, Y_ELEVATION, height);
-            GameObject backgroundGroup = CreatePrimitive(PrimitiveType.Cube, nodeContainer.transform, "Background", Vector3.zero, Quaternion.identity, scale);
-            ApplyMaterialToSingle(backgroundGroup, new Color(0.0f, 0.2f, 0.9f, 0.8f));
-            CreateTextLabel(nodeContainer.transform, node.GetNodeName(), new Vector3(0, (Y_ELEVATION / 2f) + 0.1f, (height / 2f) - 1.2f), width, HEADER_FONT_SIZE, TextAlignmentOptions.Center, FontStyles.Bold);
+            float centerZ = (minZ + maxZ) / 2f;
+
+            nodeContainer.transform.localPosition = new Vector3((minX + maxX) / 2f, node.GetNodePosition().y + currentElevation - (Y_ELEVATION / 2f), centerZ);
+
+            GameObject backgroundGroup = CreateEmptyGameObject(nodeContainer.transform, "Background", Vector3.zero);
+            GameObject visualsObj = CreateNodeGameObject(node.Type, backgroundGroup.transform, width, height);
+
+            ApplyMaterialToHierarchy(visualsObj, new Color(0.0f, 0.2f, 0.9f, 0.8f));
+
+            CreateTextLabel(backgroundGroup.transform, node.GetNodeName(), new Vector3(0, (Y_ELEVATION / 2f) + 0.1f, (height / 2f) - 1.2f), width, HEADER_FONT_SIZE, TextAlignmentOptions.Center, FontStyles.Bold);
         }
         private void BuildActorNode(GameObject nodeContainer, NodeData node)
         {
@@ -94,7 +95,7 @@ namespace Assets.Scripts.Visualizers
             GameObject backgroundGroup = CreateEmptyGameObject(nodeContainer.transform, "Background", Vector3.zero);
             GameObject nodeVisualsObj = CreateNodeGameObject(node.Type, backgroundGroup.transform, ovalWidth, ovalHeight);
 
-            ApplyMaterialToSingle(nodeVisualsObj, new Color(0.75f, 0.95f, 0.75f));
+            ApplyMaterialToHierarchy(nodeVisualsObj, new Color(0.75f, 0.95f, 0.75f));
             CreateTextLabel(backgroundGroup.transform, labelText, new Vector3(0, Y_ELEVATION * 2f + Y_ELEVATION_TEXT_OFFSET, 0), ovalWidth, LABEL_FONT_SIZE);
 
         }

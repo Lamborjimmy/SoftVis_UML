@@ -13,12 +13,12 @@ This document tracks the implementation status of UML elements, nodes, edges, an
 - [x] **Package Diagram**
 - [x] **State Machine Diagram**
 - [x] **Use Case Diagram**
+- [x] **Activity Diagram**
+- [x] **Component Diagram**
+- [x] **Communication Diagram**
 
 ### 📝 To Implement
 
-- [ ] **Activity Diagram**
-- [ ] **Component Diagram**
-- [ ] **Communication Diagram**
 - [ ] **Sequence Diagram**
 
 ---
@@ -27,28 +27,34 @@ This document tracks the implementation status of UML elements, nodes, edges, an
 
 ### ✅ Implemented
 
-- [x] **Diagram Plane**: Base node representing the UML diagram used as a canvas for drawing elements or hosting nested sub-diagrams.
+- [x] **Diagram Plane**: Base node representing the UML diagram used as a canvas.
 - [x] **Class Node**: Node representing a class in a class diagram.
 - [x] **Interface Node**: Node representing an interface in a class diagram.
 - [x] **Enumeration Node**: Node representing an enumeration in a class diagram.
 - [x] **Method Node**: Node representing methods/operations inside a class.
 - [x] **Attribute Node**: Node representing attributes/properties inside a class.
-- [x] **Actor Node**: Stick-figure node representing an actor in a use case diagram.
+- [x] **Actor Node**: Stick-figure node representing an actor in a use case or communication diagram.
 - [x] **Use Case Node**: Elliptical node representing a use case.
+- [x] **Use Case Extension Points**: Dynamic compartments in Use Case nodes displaying extension points.
 - [x] **Package Node**: Folder-like node representing a package in a package diagram.
 - [x] **State Node**: Node representing a standard behavioral state in a state diagram.
 - [x] **Pseudostate Node (Basic)**: Nodes representing `initial` (start) or `final` (end) states.
 - [x] **Deployment Node**: 3D node representing a hardware/execution environment in a deployment diagram.
 - [x] **Component Node (Deployment)**: Node representing a software component residing on a deployment node.
-- [x] **Provided Interface**: Node representing an exposed interface in a deployment/component diagram.
+- [x] **Artifact Node**: Node representing a deployable file/artifact (e.g., `.jar`, `.dll`).
+- [x] **Provided Interface**: Node representing an exposed interface.
+- [x] **Required Interface**: Node representing a required/consumed interface dependency.
+- [x] **Component Node**: Node representing a component natively within a component/package diagram.
+- [x] **Port Node**: Node representing an exposed connection point on a component boundary.
+- [x] **Action Node**: Basic node representing an activity or action in an activity diagram.
+- [x] **Swimlane Node**: Node representing a partition (swimlane) in an activity diagram.
+- [x] **Advanced Pseudostates**: Explicit nodes for `decision`/`choice`, `fork`, and `join`.
+- [x] **Lifeline Node**: Node representing an object or interacting participant in a communication diagram.
 
 ### 📝 To Implement
 
 - [ ] **Parameter Node**: Sub-node representing an input parameter for a `Method Node`.
-- [ ] **Component Node (Package)**: Node representing a component natively within a package diagram.
-- [ ] **Artifact Node**: Node representing a deployable file/artifact (e.g., `.jar`, `.dll`).
 - [ ] **Composite State Node**: State node capable of containing nested sub-states or orthogonal regions.
-- [ ] **Advanced Pseudostates**: Explicit nodes for `choice`, `fork`, `join`, `junction`, and `entry/exit points` in state diagrams.
 - [ ] **State Internal Behaviors**: Dedicated compartments for `entry /`, `do /`, and `exit /` actions within a state node.
 
 ---
@@ -67,6 +73,7 @@ This document tracks the implementation status of UML elements, nodes, edges, an
 - [x] **Transition**: Directional state change edge.
 - [x] **Self-associated Edges**: Loops pointing back to the source node.
 - [x] **Provides**: Connecting components to provided interfaces.
+- [x] **Control Flow / Object Flow**: Directional flow arrows routing activity step-by-step or transferring objects in Activity Diagrams.
 
 ### 📝 To Implement
 
@@ -75,6 +82,7 @@ This document tracks the implementation status of UML elements, nodes, edges, an
 - [ ] **Transition Labels**: Labels for state transitions specifying `[Guard]`, `Trigger`, and `/Effect`.
 - [ ] **Package Edge Notation**: Explicit stereotype labels like `«merge»`, `«import»`, `«access»`.
 - [ ] **Deployment Edge Notation**: Explicit stereotype labels like `«manifest»`, `«deploy»`.
+- [ ] **Message Labels**: Sequential numbering and text labels for messages on communication diagram links.
 
 ---
 
@@ -82,10 +90,15 @@ This document tracks the implementation status of UML elements, nodes, edges, an
 
 ### ✅ Implemented
 
-- [x] **Hierarchical Nesting**: Recursive parsing of `DiagramEdgeTypes.NESTED` to visually embed elements inside containers (e.g., packages inside packages, components inside nodes).
+- [x] **Hierarchical Nesting**: Recursive parsing of nested edges to visually embed elements inside containers.
+- [x] **Node Stereotype Labels**: Explicitly rendering textual stereotypes (e.g. `«node»`, `«artifact»`) above node names automatically.
 - [x] **Edge Hub**: Routing mechanism that intercepts and organizes edges before they enter a node to prevent visual clutter.
+- [x] **Rank-Based Layout**: Automatic horizontal layout mapping that groups elements in steps from initial to final.
+- [x] **Swimlane Boundaries**: Dynamic calculation of bounding boxes around partitions ensuring nested elements remain safely contained within their lanes.
+- [x] **Port Snapping**: Algorithmic separation and snapping of port nodes to the physical perimeter of parent Component boundaries.
+- [x] **Dynamic Text Measuring**: Utility measuring and properly scaling text width backgrounds dynamically (e.g. for Actor/Lifeline/Use Case text widths).
 
 ### 📝 To Implement
 
 - [ ] **Diagram Plane Scaling**: Automatic/default bounding box scaling when rendering multiple sub-graphs or disjointed graphs on the same plane.
-- [ ] **Universal Node Prefabs**: Transitioning from procedural primitive generation (e.g., `GameObject.CreatePrimitive`) to a fully Prefab-based system for all node types to unify aesthetics.
+- [ ] **Universal Node Prefabs**: Transitioning from procedural primitive generation to a fully Prefab-based system for all node types to unify aesthetics.

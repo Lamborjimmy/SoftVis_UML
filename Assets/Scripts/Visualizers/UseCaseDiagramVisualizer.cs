@@ -62,7 +62,7 @@ namespace Assets.Scripts.Visualizers
             GameObject backgroundGroup = CreateEmptyGameObject(nodeContainer.transform, "Background", Vector3.zero);
             GameObject visualsObj = CreateNodeGameObject(node.Type, backgroundGroup.transform, width, height);
 
-            ApplyMaterialToHierarchy(visualsObj, new Color(0.0f, 0.2f, 0.9f, 0.8f));
+            ApplyColorToHierarchy(visualsObj, new Color(0.0f, 0.2f, 0.9f, 0.8f));
 
             CreateTextLabel(backgroundGroup.transform, node.GetNodeName(), new Vector3(0, (Y_ELEVATION / 2f) + 0.1f, (height / 2f) - 1.2f), width, HEADER_FONT_SIZE, TextAlignmentOptions.Center, FontStyles.Bold);
         }
@@ -95,7 +95,7 @@ namespace Assets.Scripts.Visualizers
             GameObject backgroundGroup = CreateEmptyGameObject(nodeContainer.transform, "Background", Vector3.zero);
             GameObject nodeVisualsObj = CreateNodeGameObject(node.Type, backgroundGroup.transform, ovalWidth, ovalHeight);
 
-            ApplyMaterialToHierarchy(nodeVisualsObj, new Color(0.75f, 0.95f, 0.75f));
+            ApplyColorToHierarchy(nodeVisualsObj, new Color(0.75f, 0.95f, 0.75f));
             CreateTextLabel(backgroundGroup.transform, labelText, new Vector3(0, Y_ELEVATION * 2f + Y_ELEVATION_TEXT_OFFSET, 0), ovalWidth, LABEL_FONT_SIZE);
 
         }

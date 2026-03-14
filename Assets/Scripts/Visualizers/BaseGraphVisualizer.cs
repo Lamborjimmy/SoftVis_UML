@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.ConstrainedExecution;
 using Assets.Scripts.Data;
 using Assets.Scripts.Interfaces;
 using TMPro;
@@ -12,6 +13,7 @@ namespace Assets.Scripts.Visualizers
         private Material cachedLineMaterial;
         private Material cachedDashedMaterial;
         private TextMeshPro measurer;
+        private MaterialPropertyBlock propertyBlock;
         protected Material cachedNodeMaterial;
         protected Dictionary<string, GameObject> prefabsDictionary;
         private Dictionary<string, int> edgePairCounts = new Dictionary<string, int>();
@@ -22,6 +24,7 @@ namespace Assets.Scripts.Visualizers
         protected const float LINE_HEIGHT = 0.8f;
         protected const float Y_ELEVATION = 0.1f;
         protected const float Y_ELEVATION_TEXT_OFFSET = 0.05f;
+        private static readonly int COLOR_PROPERTY_ID = Shader.PropertyToID("_BaseColor");
 
         protected abstract void DrawDiagramContent(GameObject container, List<NodeData> nodes, List<EdgeData> edges);//TODO rename to CreateDiagramContent
         #region Nesting Context
@@ -110,6 +113,7 @@ namespace Assets.Scripts.Visualizers
         public void Initialize(Dictionary<string, GameObject> prefabs)
         {
             prefabsDictionary = prefabs;
+            propertyBlock = new MaterialPropertyBlock();
             if (cachedLineMaterial == null)
                 cachedLineMaterial = new Material(Shader.Find("Sprites/Default"));
             if (cachedNodeMaterial == null)
@@ -171,27 +175,23 @@ namespace Assets.Scripts.Visualizers
         {
             if (obj.TryGetComponent<Renderer>(out var rend))
             {
-                SetRendererMaterial(rend, color);
+                rend.sharedMaterial = cachedNodeMaterial;
+                SetRendererColor(rend, color);
             }
         }
-
-        protected void ApplyMaterialToHierarchy(GameObject obj, Color color)
+        protected void ApplyColorToHierarchy(GameObject obj, Color color)
         {
             foreach (var rend in obj.GetComponentsInChildren<Renderer>())
             {
-                if (rend.enabled)
-                {
-                    SetRendererMaterial(rend, color);
-                }
+                SetRendererColor(rend, color);
             }
         }
-
-        private void SetRendererMaterial(Renderer rend, Color color)
+        private void SetRendererColor(Renderer rend, Color color)
         {
-            rend.material = cachedNodeMaterial;
-            rend.material.color = color;
+            rend.GetPropertyBlock(propertyBlock);
+            propertyBlock.SetColor(COLOR_PROPERTY_ID, color);
+            rend.SetPropertyBlock(propertyBlock);
         }
-
         private void ApplyEdgeLineMaterial(LineRenderer lr, string edgeType, Vector3 startPoint, Vector3 endPoint)
         {
             bool isDashed = edgeType == DiagramEdgeTypes.INCLUDES_UML
@@ -208,13 +208,13 @@ namespace Assets.Scripts.Visualizers
 
                 Vector2 tiling = new Vector2(lineLength / dashPeriodWorldUnits, 1f);
 
-                var block = new MaterialPropertyBlock();
-                block.SetVector("_MainTex_ST", new Vector4(tiling.x, tiling.y, 0f, 0f));
-                lr.SetPropertyBlock(block);
+                lr.GetPropertyBlock(propertyBlock);
+                propertyBlock.SetVector("_MainTex_ST", new Vector4(tiling.x, tiling.y, 0f, 0f));
+                lr.SetPropertyBlock(propertyBlock);
             }
             else
             {
-                lr.material = cachedLineMaterial;
+                lr.sharedMaterial = cachedLineMaterial;
                 lr.textureMode = LineTextureMode.Stretch;
             }
         }
@@ -595,6 +595,7 @@ namespace Assets.Scripts.Visualizers
                 lr.SetPosition(1, endPoint);
             }
             ApplyEdgeLineMaterial(lr, edgeType, startPoint, endPoint);
+            SetRendererColor(lr, Color.white);
 
             return edgeGo;
         }

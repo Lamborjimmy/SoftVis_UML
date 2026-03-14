@@ -53,7 +53,7 @@ namespace Assets.Scripts.Visualizers
             GameObject nodeGameObject = CreateEmptyGameObject(nodesParent.transform, nodeLabel, nodePosition);
             GameObject backgroundGroup = CreateEmptyGameObject(nodeGameObject.transform, "Background", Vector3.zero);
             GameObject nodeVisualsObj = CreateNodeGameObject(node.Type, backgroundGroup.transform, totalX, totalZ);
-            ApplyMaterialToSingle(nodeVisualsObj, Color.bisque);//TODO maybe change to applying only color,and let the material be assigned in prefab
+            ApplyColorToHierarchy(nodeVisualsObj, Color.bisque);
 
             SpawnClassLabels(backgroundGroup.transform, node, members, totalX, totalZ);
             if (members != null)

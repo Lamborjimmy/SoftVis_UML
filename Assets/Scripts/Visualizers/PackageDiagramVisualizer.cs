@@ -62,7 +62,7 @@ namespace Assets.Scripts.Visualizers
             GameObject visualsObj = CreateNodeGameObject(node.Type, backgroundGroup.transform, nodeWidth, totalHeight);
 
             ConfigurePackagePrefabParts(visualsObj, nodeWidth, nodeHeight, totalHeight, currentTabHeight);
-            ApplyMaterialToHierarchy(visualsObj, GetLayerColor(depth, true));
+            ApplyColorToHierarchy(visualsObj, GetLayerColor(depth, true));
 
             float textZ = (nodeHeight / 2f) - (currentTabHeight / 2f) - 1.5f;
             CreateTextLabel(backgroundGroup.transform, node.GetNodeName(), new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, textZ), nodeWidth, HEADER_FONT_SIZE, TextAlignmentOptions.Top, FontStyles.Bold);
@@ -82,7 +82,7 @@ namespace Assets.Scripts.Visualizers
             GameObject visualsObj = CreateNodeGameObject(node.Type, backgroundGroup.transform, nodeWidth, totalHeight);
 
             ConfigurePackagePrefabParts(visualsObj, nodeWidth, nodeHeight, totalHeight, currentTabHeight);
-            ApplyMaterialToHierarchy(visualsObj, GetLayerColor(depth, false));
+            ApplyColorToHierarchy(visualsObj, GetLayerColor(depth, false));
 
             float textZ = (nodeHeight / 2f) - (currentTabHeight / 2f) - 1.5f;
             CreateTextLabel(backgroundGroup.transform, node.GetNodeName(), new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, textZ), nodeWidth, HEADER_FONT_SIZE, TextAlignmentOptions.Top, FontStyles.Bold);
@@ -99,7 +99,7 @@ namespace Assets.Scripts.Visualizers
             GameObject backgroundGroup = CreateEmptyGameObject(nodeContainer.transform, "Background", Vector3.zero);
             GameObject visualsObj = CreateNodeGameObject(node.Type, backgroundGroup.transform, nodeWidth, nodeHeight);
 
-            ApplyMaterialToHierarchy(visualsObj, GetLayerColor(depth, false));
+            ApplyColorToHierarchy(visualsObj, GetLayerColor(depth, false));
 
             CreateTextLabel(backgroundGroup.transform, node.GetNodeName(), new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, 0), nodeWidth, HEADER_FONT_SIZE, TextAlignmentOptions.Center, FontStyles.Bold);
         }

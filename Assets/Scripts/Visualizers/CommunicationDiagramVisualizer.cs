@@ -47,7 +47,7 @@ namespace Assets.Scripts.Visualizers
             float height = 4f;
             GameObject backgroundGroup = CreateEmptyGameObject(nodeContainer.transform, "Background", Vector3.zero);
             GameObject visualsObj = CreateNodeGameObject(node.Type, backgroundGroup.transform, width, height);
-            ApplyMaterialToHierarchy(visualsObj, new Color(0.7f, 0.85f, 0.9f));
+            ApplyColorToHierarchy(visualsObj, new Color(0.7f, 0.85f, 0.9f));
             CreateTextLabel(backgroundGroup.transform, node.GetNodeName(), new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, 0), textWidth, HEADER_FONT_SIZE, TextAlignmentOptions.Center, FontStyles.Bold);
         }
     }

@@ -34,7 +34,8 @@ namespace Assets.Scripts.Visualizers
         {
             string prefabKey = node.GetNodeName() == "initial" ? DiagramNodeTypes.INITIAL : DiagramNodeTypes.FINAL;
             GameObject backgroundGroup = CreateEmptyGameObject(nodeContainer.transform, "Background", Vector3.zero);
-            CreateNodeGameObject(prefabKey, backgroundGroup.transform, 1f, 1f, true);
+            GameObject visualsObj = CreateNodeGameObject(prefabKey, backgroundGroup.transform, 1f, 1f, true);
+            ApplyColorToHierarchy(visualsObj, Color.black);
         }
 
         private void BuildStateNode(GameObject nodeContainer, NodeData node)
@@ -45,7 +46,8 @@ namespace Assets.Scripts.Visualizers
             float nodeHeight = 2.5f;
 
             GameObject backgroundGroup = CreateEmptyGameObject(nodeContainer.transform, "Background", Vector3.zero);
-            CreateNodeGameObject(node.Type, backgroundGroup.transform, nodeWidth, nodeHeight);
+            GameObject visualsObj = CreateNodeGameObject(node.Type, backgroundGroup.transform, nodeWidth, nodeHeight);
+            ApplyColorToHierarchy(visualsObj, Color.yellow);
             CreateTextLabel(backgroundGroup.transform, node.GetNodeName(), new Vector3(0, Y_ELEVATION * 2 + Y_ELEVATION_TEXT_OFFSET, 0), nodeWidth, HEADER_FONT_SIZE, TextAlignmentOptions.Center);
 
         }

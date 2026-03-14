@@ -277,36 +277,31 @@ namespace Assets.Scripts.Visualizers
             obj.transform.localScale = scale;
             return obj;
         }
-        protected void GetRecursiveBounds(
-            string parentKey,
-            Dictionary<string, List<NodeData>> parentToChildren,
-            out float minX, out float maxX, out float minZ, out float maxZ,
-            float childPaddingX = 0f, float childPaddingZ = 0f)
+        protected void GetRecursiveBounds(string parentKey, Dictionary<string, List<NodeData>> parentToChildren, out float minX, out float maxX, out float minZ, out float maxZ)
         {
             minX = minZ = float.MaxValue;
             maxX = maxZ = float.MinValue;
 
             if (!parentToChildren.ContainsKey(parentKey)) return;
 
+            float paddingX = 1.0f;
+            float paddingZ = 1.0f;
+
             foreach (var child in parentToChildren[parentKey])
             {
-                Vector3 pos = child.GetNodePosition();
-                float childMinX = pos.x;
-                float childMaxX = pos.x;
-                float childMinZ = pos.z;
-                float childMaxZ = pos.z;
+                float childMinX = child.GetNodePosition().x;
+                float childMaxX = child.GetNodePosition().x;
+                float childMinZ = child.GetNodePosition().z;
+                float childMaxZ = child.GetNodePosition().z;
 
                 if (parentToChildren.ContainsKey(child.Key) && parentToChildren[child.Key].Count > 0)
                 {
-                    GetRecursiveBounds(child.Key, parentToChildren, out float nestedMinX, out float nestedMaxX, out float nestedMinZ, out float nestedMaxZ, childPaddingX, childPaddingZ);
+                    GetRecursiveBounds(child.Key, parentToChildren, out childMinX, out childMaxX, out childMinZ, out childMaxZ);
 
-                    if (nestedMinX != float.MaxValue)
-                    {
-                        childMinX = Mathf.Min(childMinX, nestedMinX - childPaddingX);
-                        childMaxX = Mathf.Max(childMaxX, nestedMaxX + childPaddingX);
-                        childMinZ = Mathf.Min(childMinZ, nestedMinZ - childPaddingZ);
-                        childMaxZ = Mathf.Max(childMaxZ, nestedMaxZ + childPaddingZ);
-                    }
+                    childMinX -= paddingX;
+                    childMaxX += paddingX;
+                    childMinZ -= paddingZ;
+                    childMaxZ += paddingZ;
                 }
 
                 minX = Mathf.Min(minX, childMinX);

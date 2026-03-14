@@ -11,7 +11,7 @@ namespace Assets.Scripts.Graphs
     {
         [Header("Node Type Prefabs")]
         [SerializeField] private GameObject actorPrefab;
-        [SerializeField] private GameObject classPrefab;
+        [SerializeField] private GameObject cubePrefab;
         [SerializeField] private GameObject packagePrefab;
         [SerializeField] private GameObject statePrefab;
         [SerializeField] private GameObject initialPrefab;
@@ -23,7 +23,7 @@ namespace Assets.Scripts.Graphs
         [SerializeField] private GameObject aggregationPrefab;
         [SerializeField] private GameObject compositionPrefab;
         [SerializeField] private GameObject generalizationPrefab;
-        [SerializeField] private GameObject includePrefab;
+        [SerializeField] private GameObject arrowPrefab;
         [SerializeField] private float verticalSpacing = 12f;
         [SerializeField] private GraphDataManager graphManager;
         private Dictionary<string, IGraphVisualizer> visualizersByType;
@@ -118,13 +118,15 @@ namespace Assets.Scripts.Graphs
         private Dictionary<string, GameObject> InitializePrefabDictionary()
         {
             Dictionary<string, GameObject> dict = new Dictionary<string, GameObject>();
+            //Node prefabs
+            dict[DiagramNodeTypes.DIAGRAM] = cubePrefab;
             dict[DiagramNodeTypes.ACTOR] = actorPrefab;
-            dict[DiagramNodeTypes.CLASS] = classPrefab;
-            dict[DiagramNodeTypes.INTERFACE] = classPrefab;
-            dict[DiagramNodeTypes.ENUMERATION] = classPrefab;
-            dict[DiagramNodeTypes.LIFELINE] = classPrefab;
-            dict[DiagramNodeTypes.NODE] = classPrefab;
-            dict[DiagramNodeTypes.COMPONENT] = classPrefab;
+            dict[DiagramNodeTypes.CLASS] = cubePrefab;
+            dict[DiagramNodeTypes.INTERFACE] = cubePrefab;
+            dict[DiagramNodeTypes.ENUMERATION] = cubePrefab;
+            dict[DiagramNodeTypes.LIFELINE] = cubePrefab;
+            dict[DiagramNodeTypes.NODE] = cubePrefab;
+            dict[DiagramNodeTypes.COMPONENT] = cubePrefab;
             dict[DiagramNodeTypes.PACKAGE] = packagePrefab;
             dict[DiagramNodeTypes.STATE] = statePrefab;
             dict[DiagramNodeTypes.INITIAL] = initialPrefab;
@@ -132,10 +134,16 @@ namespace Assets.Scripts.Graphs
             dict[DiagramNodeTypes.PROVIDED_INTERFACE] = providedInterfacePrefab;
             dict[DiagramNodeTypes.REQUIRED_INTERFACE] = requiredInterfacePrefab;
             dict[DiagramNodeTypes.USECASE] = useCasePrefab;
+            //Edge prefabs
             dict[DiagramEdgeTypes.AGGREGATES] = aggregationPrefab;
             dict[DiagramEdgeTypes.COMPOSES] = compositionPrefab;
             dict[DiagramEdgeTypes.GENERALIZES] = generalizationPrefab;
-            dict[DiagramEdgeTypes.INCLUDES_UML] = includePrefab;
+            dict[DiagramEdgeTypes.INCLUDES_UML] = arrowPrefab;
+            dict[DiagramEdgeTypes.EXTENDS_UML] = arrowPrefab;
+            dict[DiagramEdgeTypes.DEPENDENCY] = arrowPrefab;
+            dict[DiagramEdgeTypes.TRANSITIONS_TO] = arrowPrefab;
+            dict[DiagramEdgeTypes.FLOWS_TO] = arrowPrefab;
+            dict[DiagramEdgeTypes.OBJECT_FLOW] = arrowPrefab;
             return dict;
         }
     }

@@ -10,52 +10,12 @@ namespace Assets.Scripts.Visualizers
     {
         protected override void DrawDiagramContent(GameObject container, List<NodeData> nodes, List<EdgeData> edges)
         {
-            GameObject nodesParent = new GameObject("Nodes");
-            GameObject edgesParent = new GameObject("Edges");
+            var (nodesParent, edgesParent) = CreateParentObjects(container);
 
-            nodesParent.transform.SetParent(container.transform, false);
-            edgesParent.transform.SetParent(container.transform, false);
+            NestingContext nesting = BuildNestingHierarchy(nodes, edges);
 
-            var nodeObjects = new Dictionary<string, GameObject>();
-
-            // 1. Map Nesting Hierarchy
-            var parentToChildren = new Dictionary<string, List<NodeData>>();
-            var childToParent = new Dictionary<string, string>();
-            var nestedChildKeys = new HashSet<string>();
-
-            foreach (var edge in edges.Where(e => e.Type == DiagramEdgeTypes.NESTED))
-            {
-                string pKey = ExtractKeyFromId(edge.From);
-                string cKey = ExtractKeyFromId(edge.To);
-
-                nestedChildKeys.Add(cKey);
-                childToParent[cKey] = pKey;
-
-                if (!parentToChildren.ContainsKey(pKey))
-                    parentToChildren[pKey] = new List<NodeData>();
-
-                var childNode = nodes.FirstOrDefault(n => n.Key == cKey);
-                if (childNode != null)
-                    parentToChildren[pKey].Add(childNode);
-            }
-
-            var rootDiagram = nodes.FirstOrDefault(n => n.Type == DiagramNodeTypes.DIAGRAM);
-
-            int GetDepth(string nodeKey)
-            {
-                int depth = 0;
-                string current = nodeKey;
-                while (childToParent.ContainsKey(current))
-                {
-                    current = childToParent[current];
-                    if (rootDiagram != null && current != rootDiagram.Key)
-                        depth++;
-                }
-                return depth;
-            }
-
-            var sortedNodes = nodes.Where(n => n != rootDiagram)
-                                   .OrderBy(n => GetDepth(n.Key))
+            var sortedNodes = nodes.Where(n => n != nesting.RootDiagram && n.Type != DiagramNodeTypes.DIAGRAM)
+                                   .OrderBy(n => nesting.GetDepth(n.Key))
                                    .ToList();
 
             var overriddenPositions = new Dictionary<string, Vector3>();
@@ -67,22 +27,197 @@ namespace Assets.Scripts.Visualizers
                 overriddenPositions[node.Key] = pos;
             }
 
-            var flowEdges = edges.Where(e => e.Type == DiagramEdgeTypes.FLOWS_TO || e.Type == DiagramEdgeTypes.OBJECT_FLOW).ToList();
-            var adj = new Dictionary<string, List<string>>();
+            ApplyRankBasedSpacing(sortedNodes, edges, overriddenPositions);
+
+            var swimlaneBoundsDict = CalculateSwimlaneBounds(sortedNodes, nesting.ParentToChildren, overriddenPositions);
+
+            var nodeBounds = new Dictionary<string, Bounds>();
+            var nodeObjects = BuildNodes(nodesParent, sortedNodes, nesting, overriddenPositions, swimlaneBoundsDict, nodeBounds);
+
+            FilterAndRenderEdges(edges, nodeObjects, edgesParent.transform);
+        }
+
+        private Dictionary<string, GameObject> BuildNodes(
+            GameObject nodesParent,
+            List<NodeData> sortedNodes,
+            NestingContext nesting,
+            Dictionary<string, Vector3> overriddenPositions,
+            Dictionary<string, (float minX, float maxX, float minZ, float maxZ)> swimlaneBoundsDict,
+            Dictionary<string, Bounds> nodeBounds)
+        {
+            var nodeObjects = new Dictionary<string, GameObject>();
+
+            var swimlanesList = sortedNodes.Where(n => n.Type == DiagramNodeTypes.SWIMLANE).ToList();
 
             foreach (var node in sortedNodes)
             {
-                adj[node.Key] = new List<string>();
+                int depth = nesting.GetDepth(node.Key);
+                float dampeningFactor = 0.6f;
+                float currentElevation = Y_ELEVATION * (1f + (depth * dampeningFactor));
+
+                string nodeLabel = "Node_" + (node.GetNodeName() ?? node.Key);
+                GameObject nodeContainer = CreateEmptyGameObject(nodesParent.transform, nodeLabel, Vector3.zero);
+
+                bool isInitial = node.Type == DiagramNodeTypes.INITIAL;
+                bool isFinal = node.Type == DiagramNodeTypes.FINAL;
+                bool isDecision = node.Type == DiagramNodeTypes.DECISION;
+                bool isForkJoin = node.Type == DiagramNodeTypes.FORK || node.Type == DiagramNodeTypes.JOIN;
+                bool isSwimlane = node.Type == DiagramNodeTypes.SWIMLANE;
+                bool isContainer = nesting.ParentToChildren.ContainsKey(node.Key) && nesting.ParentToChildren[node.Key].Count > 0;
+
+                Bounds bounds;
+
+                if (node.Type == DiagramNodeTypes.SWIMLANE)
+                    bounds = BuildSwimlaneNode(nodeContainer, node, swimlaneBoundsDict, currentElevation, depth, swimlanesList);
+                else if (isContainer)
+                    bounds = BuildContainerNode(nodeContainer, node, nesting.ParentToChildren, overriddenPositions, currentElevation, depth);
+                else if (node.Type == DiagramNodeTypes.INITIAL || node.Type == DiagramNodeTypes.FINAL)
+                    bounds = BuildInitialFinalNode(nodeContainer, node, overriddenPositions, currentElevation);
+                else if (node.Type == DiagramNodeTypes.DECISION)
+                    bounds = BuildDecisionNode(nodeContainer, node, overriddenPositions, currentElevation);
+                else if (node.Type == DiagramNodeTypes.FORK || node.Type == DiagramNodeTypes.JOIN)
+                    bounds = BuildForkJoinNode(nodeContainer, node, overriddenPositions, currentElevation);
+                else
+                    bounds = BuildActionNode(nodeContainer, node, overriddenPositions, currentElevation, depth);
+
+                nodeBounds[node.Key] = bounds;
+                nodeObjects[node.Key] = nodeContainer;
             }
+
+            return nodeObjects;
+        }
+        private Bounds BuildSwimlaneNode(GameObject nodeContainer, NodeData node, Dictionary<string, (float minX, float maxX, float minZ, float maxZ)> swimlaneBoundsDict, float currentElevation, int depth, List<NodeData> swimlanesList)
+        {
+            var sb = swimlaneBoundsDict[node.Key];
+            float width = sb.maxX - sb.minX;
+            float height = sb.maxZ - sb.minZ;
+            float centerZ = (sb.minZ + sb.maxZ) / 2f;
+
+            Vector3 position = new Vector3((sb.minX + sb.maxX) / 2f, currentElevation - (Y_ELEVATION / 2f), centerZ);
+            nodeContainer.transform.localPosition = position;
+
+            GameObject backgroundGroup = CreateEmptyGameObject(nodeContainer.transform, "Background", Vector3.zero);
+            GameObject visualsObj = CreateNodeGameObject(node.Type, backgroundGroup.transform, width, height);
+
+            ApplyColorToHierarchy(visualsObj, GetLayerColor(depth, swimlanesList.FindIndex(s => s.Key == node.Key)));
+
+            float textZ = (height / 2f) - 1.5f;
+            CreateTextLabel(backgroundGroup.transform, "<<swimlane>>", new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, textZ), width - 2f, LABEL_FONT_SIZE, TextAlignmentOptions.TopLeft);
+            CreateTextLabel(backgroundGroup.transform, node.GetNodeName(), new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, textZ - LINE_HEIGHT), width - 2f, HEADER_FONT_SIZE, TextAlignmentOptions.TopLeft, FontStyles.Bold);
+
+            return new Bounds(position, new Vector3(width, 0f, height));
+        }
+
+        private Bounds BuildContainerNode(GameObject nodeContainer, NodeData node, Dictionary<string, List<NodeData>> parentToChildren, Dictionary<string, Vector3> overriddenPositions, float currentElevation, int depth)
+        {
+            GetRecursiveBounds(node.Key, parentToChildren, out float minX, out float maxX, out float minZ, out float maxZ, overriddenPositions);
+            if (minX == float.MaxValue) { minX = -2f; maxX = 2f; minZ = -2f; maxZ = 2f; }
+
+            float paddingX = 2.0f;
+            float paddingZ = 2.0f;
+
+            float width = (maxX - minX) + (paddingX * 2);
+            float height = (maxZ - minZ) + (paddingZ * 2);
+            float centerZ = (minZ + maxZ) / 2f;
+
+            Vector3 basePos = overriddenPositions[node.Key];
+            Vector3 position = new Vector3((minX + maxX) / 2f, basePos.y + currentElevation - (Y_ELEVATION / 2f), centerZ);
+            nodeContainer.transform.localPosition = position;
+
+            GameObject backgroundGroup = CreateEmptyGameObject(nodeContainer.transform, "Background", Vector3.zero);
+            GameObject visualsObj = CreateNodeGameObject(node.Type, backgroundGroup.transform, width, height);
+
+            ApplyColorToHierarchy(visualsObj, GetLayerColor(depth));
+
+            float textZ = (height / 2f) - 1.5f;
+            CreateTextLabel(backgroundGroup.transform, node.GetNodeName(), new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, textZ - LINE_HEIGHT), width, HEADER_FONT_SIZE, TextAlignmentOptions.Top, FontStyles.Bold);
+
+            return new Bounds(position, new Vector3(width, 0f, height));
+        }
+
+        private Bounds BuildInitialFinalNode(GameObject nodeContainer, NodeData node, Dictionary<string, Vector3> overriddenPositions, float currentElevation)
+        {
+            float width = 1.0f;
+            float height = 1.0f;
+
+            Vector3 basePos = overriddenPositions[node.Key];
+            Vector3 position = new Vector3(basePos.x, basePos.y + currentElevation, basePos.z);
+            nodeContainer.transform.localPosition = position;
+
+            GameObject backgroundGroup = CreateEmptyGameObject(nodeContainer.transform, "Background", Vector3.zero);
+            GameObject visualsObj = CreateNodeGameObject(node.Type, backgroundGroup.transform, width, height, true);
+
+            ApplyColorToHierarchy(visualsObj, Color.black);
+
+            return new Bounds(position, new Vector3(width, 0f, height));
+        }
+
+        private Bounds BuildDecisionNode(GameObject nodeContainer, NodeData node, Dictionary<string, Vector3> overriddenPositions, float currentElevation)
+        {
+            float width = 1.0f;
+            float height = 1.0f;
+
+            Vector3 basePos = overriddenPositions[node.Key];
+            Vector3 position = new Vector3(basePos.x, basePos.y + currentElevation, basePos.z);
+            nodeContainer.transform.localPosition = position;
+
+            GameObject backgroundGroup = CreateEmptyGameObject(nodeContainer.transform, "Background", Vector3.zero);
+            GameObject visualsObj = CreateNodeGameObject(node.Type, backgroundGroup.transform, width, height, true);
+
+            visualsObj.transform.localRotation = Quaternion.Euler(0, 45, 0);
+
+            ApplyColorToHierarchy(visualsObj, Color.green);
+
+            return new Bounds(position, new Vector3(width, 0f, height));
+        }
+
+        private Bounds BuildForkJoinNode(GameObject nodeContainer, NodeData node, Dictionary<string, Vector3> overriddenPositions, float currentElevation)
+        {
+            float width = 0.5f;
+            float height = 3.0f;
+
+            Vector3 basePos = overriddenPositions[node.Key];
+            Vector3 position = new Vector3(basePos.x, basePos.y + currentElevation, basePos.z);
+            nodeContainer.transform.localPosition = position;
+
+            GameObject backgroundGroup = CreateEmptyGameObject(nodeContainer.transform, "Background", Vector3.zero);
+            GameObject visualsObj = CreateNodeGameObject(node.Type, backgroundGroup.transform, width, height);
+
+            ApplyColorToHierarchy(visualsObj, Color.black);
+            return new Bounds(position, new Vector3(width, 0f, height));
+        }
+
+        private Bounds BuildActionNode(GameObject nodeContainer, NodeData node, Dictionary<string, Vector3> overriddenPositions, float currentElevation, int depth)
+        {
+            float textWidth = MeasureText(node.GetNodeName() ?? "", HEADER_FONT_SIZE, true);
+            float width = Mathf.Max(textWidth + 2f, 3f);
+            float height = 2f;
+
+            Vector3 basePos = overriddenPositions[node.Key];
+            Vector3 position = new Vector3(basePos.x, basePos.y + currentElevation, basePos.z);
+            nodeContainer.transform.localPosition = position;
+
+            GameObject backgroundGroup = CreateEmptyGameObject(nodeContainer.transform, "Background", Vector3.zero);
+            GameObject visualsObj = CreateNodeGameObject(node.Type, backgroundGroup.transform, width, height);
+
+            ApplyColorToHierarchy(visualsObj, Color.cyan);
+            CreateTextLabel(backgroundGroup.transform, node.GetNodeName(), new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, 0), width, HEADER_FONT_SIZE, TextAlignmentOptions.Center, FontStyles.Bold);
+
+            return new Bounds(position, new Vector3(width, 0f, height));
+        }
+
+        private void ApplyRankBasedSpacing(List<NodeData> sortedNodes, List<EdgeData> edges, Dictionary<string, Vector3> overriddenPositions)
+        {
+            var flowEdges = edges.Where(e => e.Type == DiagramEdgeTypes.FLOWS_TO || e.Type == DiagramEdgeTypes.OBJECT_FLOW).ToList();
+            var adj = new Dictionary<string, List<string>>();
+
+            foreach (var node in sortedNodes) adj[node.Key] = new List<string>();
 
             foreach (var edge in flowEdges)
             {
                 string from = ExtractKeyFromId(edge.From);
                 string to = ExtractKeyFromId(edge.To);
-                if (adj.ContainsKey(from))
-                {
-                    adj[from].Add(to);
-                }
+                if (adj.ContainsKey(from)) adj[from].Add(to);
             }
 
             var nodeRanks = new Dictionary<string, int>();
@@ -118,241 +253,77 @@ namespace Assets.Scripts.Visualizers
             }
 
             int maxRank = nodeRanks.Values.Count > 0 ? nodeRanks.Values.Max() : 0;
-
             float xSpacing = 9.0f;
 
             foreach (var node in sortedNodes)
             {
-                bool isContainerNode = parentToChildren.ContainsKey(node.Key) && parentToChildren[node.Key].Count > 0;
-                bool isSwimlaneNode = node.Type == DiagramNodeTypes.SWIMLANE;
-                bool isFinal = node.Type == DiagramNodeTypes.FINAL;
-
-                if (!isContainerNode && !isSwimlaneNode)
+                if (node.Type != DiagramNodeTypes.SWIMLANE)
                 {
                     int rank = nodeRanks.ContainsKey(node.Key) ? nodeRanks[node.Key] : 0;
-                    if (isFinal) rank = maxRank + 1;
+                    if (node.Type == DiagramNodeTypes.FINAL) rank = maxRank + 1;
 
                     Vector3 pos = overriddenPositions[node.Key];
                     pos.x = rank * xSpacing;
                     overriddenPositions[node.Key] = pos;
                 }
             }
+        }
 
+        private Dictionary<string, (float minX, float maxX, float minZ, float maxZ)> CalculateSwimlaneBounds(List<NodeData> sortedNodes, Dictionary<string, List<NodeData>> parentToChildren, Dictionary<string, Vector3> overriddenPositions)
+        {
             var swimlanes = sortedNodes.Where(n => n.Type == DiagramNodeTypes.SWIMLANE).ToList();
             var swimlaneBoundsDict = new Dictionary<string, (float minX, float maxX, float minZ, float maxZ)>();
 
-            if (swimlanes.Count > 0)
+            if (swimlanes.Count == 0) return swimlaneBoundsDict;
+
+            float globalMinX = float.MaxValue;
+            float globalMaxX = float.MinValue;
+
+            foreach (var sl in swimlanes)
             {
-                float globalMinX = float.MaxValue;
-                float globalMaxX = float.MinValue;
-
-                foreach (var sl in swimlanes)
-                {
-                    GetBounds(sl.Key, parentToChildren, overriddenPositions, out float minX, out float maxX, out float minZ, out float maxZ);
-                    if (minX == float.MaxValue) { minX = -2f; maxX = 2f; minZ = -2f; maxZ = 2f; }
-                    swimlaneBoundsDict[sl.Key] = (minX, maxX, minZ, maxZ);
-                }
-
-                foreach (var node in sortedNodes)
-                {
-                    Vector3 pos = overriddenPositions[node.Key];
-                    globalMinX = Mathf.Min(globalMinX, pos.x);
-                    globalMaxX = Mathf.Max(globalMaxX, pos.x);
-                }
-
-                globalMinX -= 2.0f;
-                globalMaxX += 2.0f;
-
-                swimlanes = swimlanes.OrderBy(sl => (swimlaneBoundsDict[sl.Key].minZ + swimlaneBoundsDict[sl.Key].maxZ) / 2f).ToList();
-
-                for (int i = 0; i < swimlanes.Count; i++)
-                {
-                    string slKey = swimlanes[i].Key;
-                    var currentBounds = swimlaneBoundsDict[slKey];
-
-                    float newMinZ = currentBounds.minZ;
-                    float newMaxZ = currentBounds.maxZ;
-
-                    if (i > 0)
-                    {
-                        var prevBounds = swimlaneBoundsDict[swimlanes[i - 1].Key];
-                        newMinZ = (currentBounds.minZ + prevBounds.maxZ) / 2f;
-                    }
-                    else newMinZ -= 2.0f;
-
-                    if (i < swimlanes.Count - 1)
-                    {
-                        var nextBounds = swimlaneBoundsDict[swimlanes[i + 1].Key];
-                        newMaxZ = (currentBounds.maxZ + nextBounds.minZ) / 2f;
-                    }
-                    else newMaxZ += 2.0f;
-
-                    swimlaneBoundsDict[slKey] = (globalMinX, globalMaxX, newMinZ, newMaxZ);
-                }
+                GetRecursiveBounds(sl.Key, parentToChildren, out float minX, out float maxX, out float minZ, out float maxZ, overriddenPositions);
+                if (minX == float.MaxValue) { minX = -2f; maxX = 2f; minZ = -2f; maxZ = 2f; }
+                swimlaneBoundsDict[sl.Key] = (minX, maxX, minZ, maxZ);
             }
 
-            // 2. Draw Nodes and Containers
             foreach (var node in sortedNodes)
             {
-                int depth = GetDepth(node.Key);
-                float dampeningFactor = 0.6f;
-                float currentElevation = Y_ELEVATION * (1f + (depth * dampeningFactor));
-
-                bool isInitial = node.Type == DiagramNodeTypes.INITIAL;
-                bool isFinal = node.Type == DiagramNodeTypes.FINAL;
-                bool isDecision = node.Type == DiagramNodeTypes.DECISION;
-                bool isForkJoin = node.Type == DiagramNodeTypes.FORK || node.Type == DiagramNodeTypes.JOIN;
-                bool isSwimlane = node.Type == DiagramNodeTypes.SWIMLANE;
-
-                bool isContainer = parentToChildren.TryGetValue(node.Key, out var children) && children.Count > 0;
-
-                GameObject nodeContainer = new GameObject("Node_" + (node.GetNodeName() ?? node.Key));
-                nodeContainer.transform.SetParent(nodesParent.transform, false);
-
-                float nodeWidth, nodeHeight;
-                Vector3 position;
-                Vector3 basePos = overriddenPositions[node.Key];
-
-                if (isContainer || isSwimlane)
-                {
-                    float minX, maxX, minZ, maxZ;
-                    float paddingX = 2.0f;
-                    float paddingZ = 2.0f;
-
-                    if (isSwimlane && swimlaneBoundsDict.ContainsKey(node.Key))
-                    {
-                        var sb = swimlaneBoundsDict[node.Key];
-                        minX = sb.minX; maxX = sb.maxX;
-                        minZ = sb.minZ; maxZ = sb.maxZ;
-                        paddingX = 0f;
-                        paddingZ = 0f;
-                    }
-                    else
-                    {
-                        GetBounds(node.Key, parentToChildren, overriddenPositions, out minX, out maxX, out minZ, out maxZ);
-                        if (minX == float.MaxValue) { minX = -2f; maxX = 2f; minZ = -2f; maxZ = 2f; }
-                    }
-
-                    nodeWidth = (maxX - minX) + paddingX * 2;
-                    nodeHeight = (maxZ - minZ) + paddingZ * 2;
-                    float centerZ = (minZ + maxZ) / 2f;
-
-                    position = new Vector3((minX + maxX) / 2f, basePos.y + currentElevation - (Y_ELEVATION / 2f), centerZ);
-                }
-                else if (isInitial || isFinal)
-                {
-                    nodeWidth = 1.8f;
-                    nodeHeight = 1.8f;
-                    position = new Vector3(basePos.x, basePos.y + currentElevation, basePos.z);
-                }
-                else if (isDecision)
-                {
-                    nodeWidth = 2.5f;
-                    nodeHeight = 2.5f;
-                    position = new Vector3(basePos.x, basePos.y + currentElevation, basePos.z);
-                }
-                else if (isForkJoin)
-                {
-                    nodeWidth = 0.5f;
-                    nodeHeight = 3.0f;
-                    position = new Vector3(basePos.x, basePos.y + currentElevation, basePos.z);
-                }
-                else
-                {
-                    float textWidth = MeasureText(node.GetNodeName() ?? "", HEADER_FONT_SIZE, true);
-                    nodeWidth = Mathf.Max(textWidth + 2f, 3f);
-                    nodeHeight = 2f;
-                    position = new Vector3(basePos.x, basePos.y + currentElevation, basePos.z);
-                }
-
-                nodeContainer.transform.localPosition = position;
-
-                GameObject visualObj;
-                if (prefabsDictionary != null && prefabsDictionary.TryGetValue(node.Type, out GameObject prefab) && prefab != null)
-                {
-                    visualObj = Object.Instantiate(prefab, nodeContainer.transform);
-                    visualObj.name = "Background";
-                    visualObj.transform.localPosition = Vector3.zero;
-
-                    if (isInitial || isFinal || isDecision)
-                        visualObj.transform.localScale = Vector3.one;
-                    else
-                        visualObj.transform.localScale = new Vector3(nodeWidth, 0.2f, nodeHeight);
-
-                    foreach (var txt in visualObj.GetComponentsInChildren<TextMeshPro>()) Object.Destroy(txt.gameObject);
-                }
-                else
-                {
-                    PrimitiveType prim = PrimitiveType.Cube;
-                    if (isInitial || isFinal) prim = PrimitiveType.Sphere;
-
-                    visualObj = GameObject.CreatePrimitive(prim);
-                    visualObj.transform.SetParent(nodeContainer.transform, false);
-                    visualObj.name = "Background";
-                    visualObj.transform.localPosition = Vector3.zero;
-
-                    if (isInitial || isFinal)
-                    {
-                        visualObj.transform.localScale = Vector3.one;
-                    }
-                    else if (isDecision)
-                    {
-                        visualObj.transform.localRotation = Quaternion.Euler(0, 45, 0);
-                        visualObj.transform.localScale = Vector3.one;
-                    }
-                    else
-                    {
-                        visualObj.transform.localScale = new Vector3(nodeWidth, 0.2f, nodeHeight);
-                    }
-
-                    if (visualObj.TryGetComponent<Renderer>(out var rend))
-                    {
-                        rend.material = cachedNodeMaterial;
-
-                        if (isInitial || isFinal || isForkJoin)
-                            rend.material.color = Color.black;
-                        else if (isDecision)
-                            rend.material.color = new Color(0.3f, 0.55f, 0.3f);
-                        else if (isSwimlane)
-                        {
-                            int colorOffset = swimlanes.FindIndex(s => s.Key == node.Key);
-                            rend.material.color = GetLayerColor(depth, colorOffset);
-                        }
-                        else if (isContainer)
-                            rend.material.color = GetLayerColor(depth);
-                        else
-                            rend.material.color = new Color(0.35f, 0.4f, 0.5f);
-                    }
-                }
-
-                string stereotype = "";
-                if (isSwimlane) stereotype = "<<swimlane>>";
-
-                if (isSwimlane)
-                {
-                    float textZ = (nodeHeight / 2f) - 1.5f;
-                    CreateTextLabel(nodeContainer.transform, stereotype, new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, textZ), nodeWidth - 2f, LABEL_FONT_SIZE, TextAlignmentOptions.TopLeft);
-                    CreateTextLabel(nodeContainer.transform, node.GetNodeName(), new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, textZ - LINE_HEIGHT), nodeWidth - 2f, HEADER_FONT_SIZE, TextAlignmentOptions.TopLeft, FontStyles.Bold);
-                }
-                else if (isContainer)
-                {
-                    float textZ = (nodeHeight / 2f) - 1.5f;
-                    CreateTextLabel(nodeContainer.transform, node.GetNodeName(), new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, textZ - LINE_HEIGHT), nodeWidth, HEADER_FONT_SIZE, TextAlignmentOptions.Top, FontStyles.Bold);
-                }
-                else if (isDecision || isForkJoin) { }
-                else if (!isInitial && !isFinal)
-                {
-                    CreateTextLabel(nodeContainer.transform, node.GetNodeName(), new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, 0), nodeWidth, HEADER_FONT_SIZE, TextAlignmentOptions.Center, FontStyles.Bold);
-                }
-
-                nodeObjects[node.Key] = nodeContainer;
+                Vector3 pos = overriddenPositions[node.Key];
+                globalMinX = Mathf.Min(globalMinX, pos.x);
+                globalMaxX = Mathf.Max(globalMaxX, pos.x);
             }
 
-            var validEdges = edges.Where(e => e.Type != DiagramEdgeTypes.NESTED).ToList();
-            var selfLoops = validEdges.Where(e => ExtractKeyFromId(e.From) == ExtractKeyFromId(e.To));
-            var normalEdges = validEdges.Where(e => ExtractKeyFromId(e.From) != ExtractKeyFromId(e.To));
+            globalMinX -= 2.0f;
+            globalMaxX += 2.0f;
 
-            DrawDiagramEdges(selfLoops, nodeObjects, edgesParent, normalEdges);
+            swimlanes = swimlanes.OrderBy(sl => (swimlaneBoundsDict[sl.Key].minZ + swimlaneBoundsDict[sl.Key].maxZ) / 2f).ToList();
+
+            for (int i = 0; i < swimlanes.Count; i++)
+            {
+                string slKey = swimlanes[i].Key;
+                var currentBounds = swimlaneBoundsDict[slKey];
+
+                float newMinZ = currentBounds.minZ;
+                float newMaxZ = currentBounds.maxZ;
+
+                if (i > 0)
+                {
+                    var prevBounds = swimlaneBoundsDict[swimlanes[i - 1].Key];
+                    newMinZ = (currentBounds.minZ + prevBounds.maxZ) / 2f;
+                }
+                else newMinZ -= 2.0f;
+
+                if (i < swimlanes.Count - 1)
+                {
+                    var nextBounds = swimlaneBoundsDict[swimlanes[i + 1].Key];
+                    newMaxZ = (currentBounds.maxZ + nextBounds.minZ) / 2f;
+                }
+                else newMaxZ += 2.0f;
+
+                swimlaneBoundsDict[slKey] = (globalMinX, globalMaxX, newMinZ, newMaxZ);
+            }
+
+            return swimlaneBoundsDict;
         }
 
         private Color GetLayerColor(int depth, int colorOffset = 0)
@@ -364,43 +335,6 @@ namespace Assets.Scripts.Visualizers
                 new Color(0.35f, 0.4f, 0.35f, 0.6f)
             };
             return palette[(depth + colorOffset) % palette.Length];
-        }
-
-        private void GetBounds(string parentKey, Dictionary<string, List<NodeData>> parentToChildren, Dictionary<string, Vector3> positions, out float minX, out float maxX, out float minZ, out float maxZ)
-        {
-            minX = minZ = float.MaxValue;
-            maxX = maxZ = float.MinValue;
-
-            if (!parentToChildren.ContainsKey(parentKey)) return;
-
-            float paddingX = 2.0f;
-            float paddingZ = 2.0f;
-
-            foreach (var child in parentToChildren[parentKey])
-            {
-                Vector3 pos = positions.ContainsKey(child.Key) ? positions[child.Key] : child.GetNodePosition();
-                float childMinX = pos.x;
-                float childMaxX = pos.x;
-                float childMinZ = pos.z;
-                float childMaxZ = pos.z;
-
-                if (parentToChildren.ContainsKey(child.Key) && parentToChildren[child.Key].Count > 0)
-                {
-                    GetBounds(child.Key, parentToChildren, positions, out childMinX, out childMaxX, out childMinZ, out childMaxZ);
-                    if (childMinX != float.MaxValue)
-                    {
-                        childMinX -= paddingX;
-                        childMaxX += paddingX;
-                        childMinZ -= paddingZ;
-                        childMaxZ += paddingZ;
-                    }
-                }
-
-                minX = Mathf.Min(minX, childMinX);
-                maxX = Mathf.Max(maxX, childMaxX);
-                minZ = Mathf.Min(minZ, childMinZ);
-                maxZ = Mathf.Max(maxZ, childMaxZ);
-            }
         }
     }
 }

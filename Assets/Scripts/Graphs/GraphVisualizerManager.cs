@@ -133,6 +133,13 @@ namespace Assets.Scripts.Graphs
             dict[DiagramNodeTypes.FINAL] = finalPrefab;
             dict[DiagramNodeTypes.PROVIDED_INTERFACE] = providedInterfacePrefab;
             dict[DiagramNodeTypes.REQUIRED_INTERFACE] = requiredInterfacePrefab;
+            dict[DiagramNodeTypes.PORT] = cubePrefab;
+            dict[DiagramNodeTypes.ACTIVITY] = cubePrefab;
+            dict[DiagramNodeTypes.ACTION] = cubePrefab;
+            dict[DiagramNodeTypes.FORK] = cubePrefab;
+            dict[DiagramNodeTypes.JOIN] = cubePrefab;
+            dict[DiagramNodeTypes.DECISION] = cubePrefab;
+            dict[DiagramNodeTypes.SWIMLANE] = cubePrefab;
             dict[DiagramNodeTypes.USECASE] = useCasePrefab;
             //Edge prefabs
             dict[DiagramEdgeTypes.AGGREGATES] = aggregationPrefab;

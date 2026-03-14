@@ -277,7 +277,7 @@ namespace Assets.Scripts.Visualizers
             obj.transform.localScale = scale;
             return obj;
         }
-        protected void GetRecursiveBounds(string parentKey, Dictionary<string, List<NodeData>> parentToChildren, out float minX, out float maxX, out float minZ, out float maxZ)
+        protected void GetRecursiveBounds(string parentKey, Dictionary<string, List<NodeData>> parentToChildren, out float minX, out float maxX, out float minZ, out float maxZ, Dictionary<string, Vector3> positions = null)
         {
             minX = minZ = float.MaxValue;
             maxX = maxZ = float.MinValue;
@@ -289,10 +289,15 @@ namespace Assets.Scripts.Visualizers
 
             foreach (var child in parentToChildren[parentKey])
             {
-                float childMinX = child.GetNodePosition().x;
-                float childMaxX = child.GetNodePosition().x;
-                float childMinZ = child.GetNodePosition().z;
-                float childMaxZ = child.GetNodePosition().z;
+                Vector3 pos;
+                if (positions != null)
+                    pos = positions.ContainsKey(child.Key) ? positions[child.Key] : child.GetNodePosition();
+                else
+                    pos = child.GetNodePosition();
+                float childMinX = pos.x;
+                float childMaxX = pos.x;
+                float childMinZ = pos.z;
+                float childMaxZ = pos.z;
 
                 if (parentToChildren.ContainsKey(child.Key) && parentToChildren[child.Key].Count > 0)
                 {

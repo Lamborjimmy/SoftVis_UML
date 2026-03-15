@@ -534,6 +534,7 @@ namespace Assets.Scripts.Visualizers
                 bounds = new Bounds(nodeObj.transform.InverseTransformPoint(renderers[0].bounds.center), Vector3.zero);
                 foreach (var r in renderers)
                 {
+                    if (r.GetComponent<TextMeshPro>() != null) continue;
                     bounds.Encapsulate(nodeObj.transform.InverseTransformPoint(r.bounds.min));
                     bounds.Encapsulate(nodeObj.transform.InverseTransformPoint(r.bounds.max));
                 }

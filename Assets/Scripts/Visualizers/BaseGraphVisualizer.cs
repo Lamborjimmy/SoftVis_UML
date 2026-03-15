@@ -25,7 +25,6 @@ namespace Assets.Scripts.Visualizers
         protected const float Y_ELEVATION_TEXT_OFFSET = 0.05f;
         private static readonly int COLOR_PROPERTY_ID = Shader.PropertyToID("_BaseColor");
 
-        protected abstract void DrawDiagramContent(GameObject container, List<NodeData> nodes, List<EdgeData> edges);//TODO rename to CreateDiagramContent
         #region Nesting Context
         protected class NestingContext
         {
@@ -92,7 +91,7 @@ namespace Assets.Scripts.Visualizers
             return new NestingContext(parentToChildren, childToParent, nestedChildKeys, rootDiagram);
         }
         #endregion
-
+        #region Diagram Drawing Initialization
         protected (GameObject nodesParent, GameObject edgesParent) CreateParentObjects(GameObject container)
         {
             GameObject nodesParent = new GameObject("Nodes");
@@ -136,7 +135,17 @@ namespace Assets.Scripts.Visualizers
             DrawDiagramContent(container, nodes, edges);
             RenderDiagramBasePlane(container, nodes);
         }
+        protected virtual void DrawDiagramContent(GameObject container, List<NodeData> nodes, List<EdgeData> edges)
+        {
+            var (nodesParent, edgesParent) = CreateParentObjects(container);
 
+            NestingContext nesting = BuildNestingHierarchy(nodes, edges);
+
+            var nodeObjects = BuildDiagramNodes(nodesParent, nodes, edges, nesting);
+
+            FilterAndRenderEdges(edges, nodeObjects, edgesParent.transform);
+        }
+        protected abstract Dictionary<string, GameObject> BuildDiagramNodes(GameObject nodesParent, List<NodeData> nodes, List<EdgeData> edges, NestingContext nesting);
         private void RenderDiagramBasePlane(GameObject container, List<NodeData> nodes)
         {
             var diagramNode = nodes.FirstOrDefault(n => n.Type == DiagramNodeTypes.DIAGRAM);
@@ -168,7 +177,7 @@ namespace Assets.Scripts.Visualizers
             foreach (Transform child in container.transform)
                 child.position += offset;
         }
-
+        #endregion
         #region Material Applying
         protected void ApplyMaterialToSingle(GameObject obj, Color color)
         {

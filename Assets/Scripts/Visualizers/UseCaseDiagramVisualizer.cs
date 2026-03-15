@@ -8,13 +8,10 @@ namespace Assets.Scripts.Visualizers
 {
     public class UseCaseDiagramVisualizer : BaseGraphVisualizer
     {
-        protected override void DrawDiagramContent(GameObject container, List<NodeData> nodes, List<EdgeData> edges)
+        protected override Dictionary<string, GameObject> BuildDiagramNodes(GameObject nodesParent, List<NodeData> nodes, List<EdgeData> edges, NestingContext nesting)
         {
-            var (nodesParent, edgesParent) = CreateParentObjects(container);
             var extensionPointsMap = BuildExtensionPointsMap(nodes, edges);
-            NestingContext ctx = BuildNestingHierarchy(nodes, edges);
-            var nodeObjects = BuildNodes(nodesParent, nodes, ctx, extensionPointsMap);
-            FilterAndRenderEdges(edges, nodeObjects, edgesParent.transform);
+            return BuildNodes(nodesParent, nodes, nesting, extensionPointsMap);
         }
         private Dictionary<string, GameObject> BuildNodes(GameObject nodesParent, List<NodeData> nodes, NestingContext nesting, Dictionary<string, List<string>> extensionPointsMap)
         {

@@ -10,19 +10,9 @@ namespace Assets.Scripts.Visualizers
     {
         private const float PADDING_Z = 1.0f;
 
-        protected override void DrawDiagramContent(GameObject container, List<NodeData> nodes, List<EdgeData> edges)
+        protected override Dictionary<string, GameObject> BuildDiagramNodes(GameObject nodesParent, List<NodeData> nodes, List<EdgeData> edges, NestingContext nesting)
         {
-            var (nodesParent, edgesParent) = CreateParentObjects(container);
-
-            NestingContext ctx = BuildNestingHierarchy(nodes, edges);
-
-            var nodeObjects = BuildNodes(nodesParent, nodes, ctx);
-
-            var validEdges = edges.Where(e => e.Type != DiagramEdgeTypes.NESTED).ToList();
-            var selfLoops = validEdges.Where(e => ExtractKeyFromId(e.From) == ExtractKeyFromId(e.To));
-            var normalEdges = validEdges.Where(e => ExtractKeyFromId(e.From) != ExtractKeyFromId(e.To));
-
-            FilterAndRenderEdges(edges, nodeObjects, edgesParent.transform);
+            return BuildNodes(nodesParent, nodes, nesting);
         }
 
         private Dictionary<string, GameObject> BuildNodes(GameObject nodesParent, List<NodeData> nodes, NestingContext ctx)

@@ -7,12 +7,9 @@ namespace Assets.Scripts.Visualizers
 {
     public class DeploymentDiagramVisualizer : BaseGraphVisualizer
     {
-        protected override void DrawDiagramContent(GameObject container, List<NodeData> nodes, List<EdgeData> edges)
+        protected override Dictionary<string, GameObject> BuildDiagramNodes(GameObject nodesParent, List<NodeData> nodes, List<EdgeData> edges, NestingContext nesting)
         {
-            var (nodesParent, edgesParent) = CreateParentObjects(container);
-            NestingContext ctx = BuildNestingHierarchy(nodes, edges);
-            var nodeObjects = BuildNodes(nodesParent, nodes, ctx);
-            FilterAndRenderEdges(edges, nodeObjects, edgesParent.transform);
+            return BuildNodes(nodesParent, nodes, nesting);
         }
 
         private Dictionary<string, GameObject> BuildNodes(GameObject nodesParent, List<NodeData> nodes, NestingContext nesting)

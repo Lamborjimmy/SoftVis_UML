@@ -9,13 +9,10 @@ namespace Assets.Scripts.Visualizers
 {
     public class ComponentDiagramVisualizer : BaseGraphVisualizer
     {
-        protected override void DrawDiagramContent(GameObject container, List<NodeData> nodes, List<EdgeData> edges)
+        protected override Dictionary<string, GameObject> BuildDiagramNodes(GameObject nodesParent, List<NodeData> nodes, List<EdgeData> edges, NestingContext nesting)
         {
-            var (nodesParent, edgesParent) = CreateParentObjects(container);
-
-            NestingContext nesting = BuildNestingHierarchy(nodes, edges);
-
             var nodeBounds = new Dictionary<string, Bounds>();
+
             var nodeObjects = BuildNodes(nodesParent, nodes, nesting, nodeBounds);
 
             var validEdges = edges.Where(e => e.Type != DiagramEdgeTypes.NESTED).ToList();
@@ -23,7 +20,7 @@ namespace Assets.Scripts.Visualizers
             var parentToPorts = SnapPortsToParentPerimeter(nodes, nesting.ChildToParent, nodeObjects, nodeBounds, validEdges);
             RelaxOverlappingPorts(parentToPorts, nodeObjects, nodeBounds);
 
-            FilterAndRenderEdges(edges, nodeObjects, edgesParent.transform);
+            return nodeObjects;
         }
 
         private Dictionary<string, GameObject> BuildNodes(GameObject nodesParent, List<NodeData> nodes, NestingContext nesting, Dictionary<string, Bounds> nodeBounds)

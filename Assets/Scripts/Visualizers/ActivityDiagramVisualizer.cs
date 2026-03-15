@@ -8,15 +8,10 @@ namespace Assets.Scripts.Visualizers
 {
     public class ActivityDiagramVisualizer : BaseGraphVisualizer
     {
-        protected override void DrawDiagramContent(GameObject container, List<NodeData> nodes, List<EdgeData> edges)
+        protected override Dictionary<string, GameObject> BuildDiagramNodes(GameObject nodesParent, List<NodeData> nodes, List<EdgeData> edges, NestingContext nesting)
         {
-            var (nodesParent, edgesParent) = CreateParentObjects(container);
-
-            NestingContext nesting = BuildNestingHierarchy(nodes, edges);
-
             var sortedNodes = nodes.Where(n => n != nesting.RootDiagram && n.Type != DiagramNodeTypes.DIAGRAM)
-                                   .OrderBy(n => nesting.GetDepth(n.Key))
-                                   .ToList();
+                               .OrderBy(n => nesting.GetDepth(n.Key)).ToList();
 
             var overriddenPositions = new Dictionary<string, Vector3>();
             float zSpacingMultiplier = 0.7f;
@@ -30,11 +25,8 @@ namespace Assets.Scripts.Visualizers
             ApplyRankBasedSpacing(sortedNodes, edges, overriddenPositions);
 
             var swimlaneBoundsDict = CalculateSwimlaneBounds(sortedNodes, nesting.ParentToChildren, overriddenPositions);
-
             var nodeBounds = new Dictionary<string, Bounds>();
-            var nodeObjects = BuildNodes(nodesParent, sortedNodes, nesting, overriddenPositions, swimlaneBoundsDict, nodeBounds);
-
-            FilterAndRenderEdges(edges, nodeObjects, edgesParent.transform);
+            return BuildNodes(nodesParent, sortedNodes, nesting, overriddenPositions, swimlaneBoundsDict, nodeBounds);
         }
 
         private Dictionary<string, GameObject> BuildNodes(

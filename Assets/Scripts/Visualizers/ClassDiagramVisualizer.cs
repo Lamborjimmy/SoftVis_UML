@@ -49,13 +49,11 @@ namespace Assets.Scripts.Visualizers
             var (totalX, totalZ) = CalculateClassDimensions(node, members, memberCount);
 
             string nodeLabel = "Node_" + (node.GetNodeName() ?? node.Key);
-            Vector3 nodePosition = new Vector3(node.GetNodePosition().x, node.GetNodePosition().y + Y_ELEVATION, node.GetNodePosition().z);
+            Vector3 nodePosition = new Vector3(node.GetNodePosition().x, node.GetNodePosition().y, node.GetNodePosition().z);
             GameObject nodeGameObject = CreateEmptyGameObject(nodesParent.transform, nodeLabel, nodePosition);
-            GameObject backgroundGroup = CreateEmptyGameObject(nodeGameObject.transform, "Background", Vector3.zero);
-            GameObject nodeVisualsObj = CreateNodeGameObject(node.Type, backgroundGroup.transform, totalX, totalZ);
-            ApplyColorToHierarchy(nodeVisualsObj, Color.bisque);
+            var (_, background) = BuildNode(nodeGameObject, node, Y_ELEVATION, nodePosition, totalX, totalZ, Color.bisque, false);
 
-            SpawnClassLabels(backgroundGroup.transform, node, members, totalX, totalZ);
+            SpawnClassLabels(background.transform, node, members, totalX, totalZ);
             if (members != null)
             {
                 foreach (var member in members)

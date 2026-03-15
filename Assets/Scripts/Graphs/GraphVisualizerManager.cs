@@ -19,6 +19,7 @@ namespace Assets.Scripts.Graphs
         [SerializeField] private GameObject providedInterfacePrefab;
         [SerializeField] private GameObject requiredInterfacePrefab;
         [SerializeField] private GameObject useCasePrefab;
+        [SerializeField] private GameObject decisionPrefab;
         [Header("Edge Type Ends Prefabs")]
         [SerializeField] private GameObject aggregationPrefab;
         [SerializeField] private GameObject compositionPrefab;
@@ -138,7 +139,7 @@ namespace Assets.Scripts.Graphs
             dict[DiagramNodeTypes.ACTION] = cubePrefab;
             dict[DiagramNodeTypes.FORK] = cubePrefab;
             dict[DiagramNodeTypes.JOIN] = cubePrefab;
-            dict[DiagramNodeTypes.DECISION] = cubePrefab;
+            dict[DiagramNodeTypes.DECISION] = decisionPrefab;
             dict[DiagramNodeTypes.SWIMLANE] = cubePrefab;
             dict[DiagramNodeTypes.USECASE] = useCasePrefab;
             //Edge prefabs

@@ -32,10 +32,8 @@ namespace Assets.Scripts.Visualizers
         }
         private void BuildPseudostateNode(GameObject nodeContainer, NodeData node)
         {
-            string prefabKey = node.GetNodeName() == "initial" ? DiagramNodeTypes.INITIAL : DiagramNodeTypes.FINAL;
-            GameObject backgroundGroup = CreateEmptyGameObject(nodeContainer.transform, "Background", Vector3.zero);
-            GameObject visualsObj = CreateNodeGameObject(prefabKey, backgroundGroup.transform, 1f, 1f, true);
-            ApplyColorToHierarchy(visualsObj, Color.black);
+            float width = 1f;
+            BuildNode(nodeContainer, node, Y_ELEVATION, node.GetNodePosition(), width, width, Color.black, true);
         }
 
         private void BuildStateNode(GameObject nodeContainer, NodeData node)
@@ -45,10 +43,8 @@ namespace Assets.Scripts.Visualizers
             float nodeWidth = Mathf.Max(textWidth, 4f);
             float nodeHeight = 2.5f;
 
-            GameObject backgroundGroup = CreateEmptyGameObject(nodeContainer.transform, "Background", Vector3.zero);
-            GameObject visualsObj = CreateNodeGameObject(node.Type, backgroundGroup.transform, nodeWidth, nodeHeight);
-            ApplyColorToHierarchy(visualsObj, Color.yellow);
-            CreateTextLabel(backgroundGroup.transform, node.GetNodeName(), new Vector3(0, Y_ELEVATION * 2 + Y_ELEVATION_TEXT_OFFSET, 0), nodeWidth, HEADER_FONT_SIZE, TextAlignmentOptions.Center);
+            var (_, background) = BuildNode(nodeContainer, node, Y_ELEVATION, node.GetNodePosition(), nodeWidth, nodeHeight, Color.softYellow, false);
+            CreateTextLabel(background.transform, node.GetNodeName(), new Vector3(0, Y_ELEVATION * 2 + Y_ELEVATION_TEXT_OFFSET, 0), nodeWidth, HEADER_FONT_SIZE, TextAlignmentOptions.Center);
 
         }
     }

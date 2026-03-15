@@ -58,11 +58,6 @@ namespace Assets.Scripts.Visualizers
                 string nodeLabel = "Node_" + (node.GetNodeName() ?? node.Key);
                 GameObject nodeContainer = CreateEmptyGameObject(nodesParent.transform, nodeLabel, Vector3.zero);
 
-                bool isInitial = node.Type == DiagramNodeTypes.INITIAL;
-                bool isFinal = node.Type == DiagramNodeTypes.FINAL;
-                bool isDecision = node.Type == DiagramNodeTypes.DECISION;
-                bool isForkJoin = node.Type == DiagramNodeTypes.FORK || node.Type == DiagramNodeTypes.JOIN;
-                bool isSwimlane = node.Type == DiagramNodeTypes.SWIMLANE;
                 bool isContainer = nesting.ParentToChildren.ContainsKey(node.Key) && nesting.ParentToChildren[node.Key].Count > 0;
 
                 Bounds bounds;
@@ -78,7 +73,7 @@ namespace Assets.Scripts.Visualizers
                 else if (node.Type == DiagramNodeTypes.FORK || node.Type == DiagramNodeTypes.JOIN)
                     bounds = BuildForkJoinNode(nodeContainer, node, overriddenPositions, currentElevation);
                 else
-                    bounds = BuildActionNode(nodeContainer, node, overriddenPositions, currentElevation, depth);
+                    bounds = BuildActionNode(nodeContainer, node, overriddenPositions, currentElevation);
 
                 nodeBounds[node.Key] = bounds;
                 nodeObjects[node.Key] = nodeContainer;
@@ -137,73 +132,35 @@ namespace Assets.Scripts.Visualizers
 
         private Bounds BuildInitialFinalNode(GameObject nodeContainer, NodeData node, Dictionary<string, Vector3> overriddenPositions, float currentElevation)
         {
-            float width = 1.0f;
-            float height = 1.0f;
-
-            Vector3 basePos = overriddenPositions[node.Key];
-            Vector3 position = new Vector3(basePos.x, basePos.y + currentElevation, basePos.z);
-            nodeContainer.transform.localPosition = position;
-
-            GameObject backgroundGroup = CreateEmptyGameObject(nodeContainer.transform, "Background", Vector3.zero);
-            GameObject visualsObj = CreateNodeGameObject(node.Type, backgroundGroup.transform, width, height, true);
-
-            ApplyColorToHierarchy(visualsObj, Color.black);
-
-            return new Bounds(position, new Vector3(width, 0f, height));
+            float width = 1f;
+            var (bounds, _) = BuildNode(nodeContainer, node, currentElevation, overriddenPositions[node.Key], width, width, Color.black, true);
+            return bounds;
         }
 
         private Bounds BuildDecisionNode(GameObject nodeContainer, NodeData node, Dictionary<string, Vector3> overriddenPositions, float currentElevation)
         {
-            float width = 1.0f;
-            float height = 1.0f;
-
-            Vector3 basePos = overriddenPositions[node.Key];
-            Vector3 position = new Vector3(basePos.x, basePos.y + currentElevation, basePos.z);
-            nodeContainer.transform.localPosition = position;
-
-            GameObject backgroundGroup = CreateEmptyGameObject(nodeContainer.transform, "Background", Vector3.zero);
-            GameObject visualsObj = CreateNodeGameObject(node.Type, backgroundGroup.transform, width, height, true);
-
-            visualsObj.transform.localRotation = Quaternion.Euler(0, 45, 0);
-
-            ApplyColorToHierarchy(visualsObj, Color.green);
-
-            return new Bounds(position, new Vector3(width, 0f, height));
+            float width = 1f;
+            var (bounds, _) = BuildNode(nodeContainer, node, currentElevation, overriddenPositions[node.Key], width, width, Color.green, true);
+            return bounds;
         }
 
         private Bounds BuildForkJoinNode(GameObject nodeContainer, NodeData node, Dictionary<string, Vector3> overriddenPositions, float currentElevation)
         {
             float width = 0.5f;
-            float height = 3.0f;
-
-            Vector3 basePos = overriddenPositions[node.Key];
-            Vector3 position = new Vector3(basePos.x, basePos.y + currentElevation, basePos.z);
-            nodeContainer.transform.localPosition = position;
-
-            GameObject backgroundGroup = CreateEmptyGameObject(nodeContainer.transform, "Background", Vector3.zero);
-            GameObject visualsObj = CreateNodeGameObject(node.Type, backgroundGroup.transform, width, height);
-
-            ApplyColorToHierarchy(visualsObj, Color.black);
-            return new Bounds(position, new Vector3(width, 0f, height));
+            float height = 3f;
+            var (bounds, _) = BuildNode(nodeContainer, node, currentElevation, overriddenPositions[node.Key], width, height, Color.black, false);
+            return bounds;
         }
 
-        private Bounds BuildActionNode(GameObject nodeContainer, NodeData node, Dictionary<string, Vector3> overriddenPositions, float currentElevation, int depth)
+        private Bounds BuildActionNode(GameObject nodeContainer, NodeData node, Dictionary<string, Vector3> overriddenPositions, float currentElevation)
         {
             float textWidth = MeasureText(node.GetNodeName() ?? "", HEADER_FONT_SIZE, true);
             float width = Mathf.Max(textWidth + 2f, 3f);
             float height = 2f;
 
-            Vector3 basePos = overriddenPositions[node.Key];
-            Vector3 position = new Vector3(basePos.x, basePos.y + currentElevation, basePos.z);
-            nodeContainer.transform.localPosition = position;
-
-            GameObject backgroundGroup = CreateEmptyGameObject(nodeContainer.transform, "Background", Vector3.zero);
-            GameObject visualsObj = CreateNodeGameObject(node.Type, backgroundGroup.transform, width, height);
-
-            ApplyColorToHierarchy(visualsObj, Color.cyan);
-            CreateTextLabel(backgroundGroup.transform, node.GetNodeName(), new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, 0), width, HEADER_FONT_SIZE, TextAlignmentOptions.Center, FontStyles.Bold);
-
-            return new Bounds(position, new Vector3(width, 0f, height));
+            var (bounds, background) = BuildNode(nodeContainer, node, currentElevation, overriddenPositions[node.Key], width, height, Color.cyan, false);
+            CreateTextLabel(background.transform, node.GetNodeName(), new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, 0), width, HEADER_FONT_SIZE, TextAlignmentOptions.Center, FontStyles.Bold);
+            return bounds;
         }
 
         private void ApplyRankBasedSpacing(List<NodeData> sortedNodes, List<EdgeData> edges, Dictionary<string, Vector3> overriddenPositions)

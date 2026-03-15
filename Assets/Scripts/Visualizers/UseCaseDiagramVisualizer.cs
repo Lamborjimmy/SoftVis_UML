@@ -25,14 +25,13 @@ namespace Assets.Scripts.Visualizers
                 int depth = nesting.GetDepth(node.Key);
                 float currentElevation = (depth + 1) * Y_ELEVATION;
                 string nodeLabel = "Node_" + (node.GetNodeName() ?? node.Key);
-                Vector3 nodePosition = new Vector3(node.GetNodePosition().x, node.GetNodePosition().y + currentElevation, node.GetNodePosition().z);
-                GameObject nodeGameObject = CreateEmptyGameObject(nodesParent.transform, nodeLabel, nodePosition);
+                GameObject nodeGameObject = CreateEmptyGameObject(nodesParent.transform, nodeLabel, Vector3.zero);
                 if (nesting.IsContainer(node.Key))
                     BuildContainerNode(nodeGameObject, node, nesting, currentElevation);
                 else if (node.Type == DiagramNodeTypes.ACTOR)
-                    BuildActorNode(nodeGameObject, node);
+                    BuildActorNode(nodeGameObject, node, currentElevation);
                 else if (node.Type == DiagramNodeTypes.USECASE)
-                    BuildUseCaseNode(nodeGameObject, node, extensionPointsMap);
+                    BuildUseCaseNode(nodeGameObject, node, extensionPointsMap, currentElevation);
                 nodeObjects[node.Key] = nodeGameObject;
             }
             return nodeObjects;
@@ -66,15 +65,16 @@ namespace Assets.Scripts.Visualizers
 
             CreateTextLabel(backgroundGroup.transform, node.GetNodeName(), new Vector3(0, (Y_ELEVATION / 2f) + 0.1f, (height / 2f) - 1.2f), width, HEADER_FONT_SIZE, TextAlignmentOptions.Center, FontStyles.Bold);
         }
-        private void BuildActorNode(GameObject nodeContainer, NodeData node)
+        private void BuildActorNode(GameObject nodeContainer, NodeData node, float currentElevation)
         {
             float textWidth = MeasureText(node.GetNodeName(), HEADER_FONT_SIZE, true);
-            GameObject backgroundGroup = CreateEmptyGameObject(nodeContainer.transform, "Background", Vector3.zero);
-            CreateNodeGameObject(DiagramNodeTypes.ACTOR, backgroundGroup.transform, 1f, 1f, true);
-            CreateTextLabel(backgroundGroup.transform, node.GetNodeName(), new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, 2f), textWidth + 3f, HEADER_FONT_SIZE, TextAlignmentOptions.Center, FontStyles.Bold);
+            float width = 1f;
+
+            var (_, background) = BuildNode(nodeContainer, node, currentElevation, node.GetNodePosition(), width, width, Color.white, true);
+            CreateTextLabel(background.transform, node.GetNodeName(), new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, 2f), textWidth + 3f, HEADER_FONT_SIZE, TextAlignmentOptions.Center, FontStyles.Bold);
         }
 
-        private void BuildUseCaseNode(GameObject nodeContainer, NodeData node, Dictionary<string, List<string>> extensionPointsMap)
+        private void BuildUseCaseNode(GameObject nodeContainer, NodeData node, Dictionary<string, List<string>> extensionPointsMap, float currentElevation)
         {
             float textWidth = MeasureText(node.GetNodeName(), HEADER_FONT_SIZE, true);
 
@@ -92,11 +92,9 @@ namespace Assets.Scripts.Visualizers
             float textHeightRequirement = lineCount * LINE_HEIGHT;
             float ovalHeight = Mathf.Max(baseHeight, textHeightRequirement);
 
-            GameObject backgroundGroup = CreateEmptyGameObject(nodeContainer.transform, "Background", Vector3.zero);
-            GameObject nodeVisualsObj = CreateNodeGameObject(node.Type, backgroundGroup.transform, ovalWidth, ovalHeight);
+            var (_, background) = BuildNode(nodeContainer, node, currentElevation, node.GetNodePosition(), ovalWidth, ovalHeight, Color.softRed, false);
 
-            ApplyColorToHierarchy(nodeVisualsObj, new Color(0.75f, 0.95f, 0.75f));
-            CreateTextLabel(backgroundGroup.transform, labelText, new Vector3(0, Y_ELEVATION * 2f + Y_ELEVATION_TEXT_OFFSET, 0), ovalWidth, LABEL_FONT_SIZE);
+            CreateTextLabel(background.transform, labelText, new Vector3(0, Y_ELEVATION * 2f + Y_ELEVATION_TEXT_OFFSET, 0), ovalWidth, LABEL_FONT_SIZE);
 
         }
     }

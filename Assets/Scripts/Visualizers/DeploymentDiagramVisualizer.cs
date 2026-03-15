@@ -63,30 +63,21 @@ namespace Assets.Scripts.Visualizers
 
         private void BuildInterfaceNode(GameObject nodeContainer, NodeData node, float currentElevation)
         {
-            nodeContainer.transform.localPosition = new Vector3(node.GetNodePosition().x, node.GetNodePosition().y + currentElevation, node.GetNodePosition().z);
-
-            GameObject backgroundGroup = CreateEmptyGameObject(nodeContainer.transform, "Background", Vector3.zero);
-            GameObject visualsObj = CreateNodeGameObject(node.Type, backgroundGroup.transform, 1.0f, 1.0f, true);
-
-            ApplyColorToHierarchy(visualsObj, new Color(0.9f, 0.8f, 0.9f));
-            CreateTextLabel(backgroundGroup.transform, node.GetNodeName(), new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, -1.5f), 8f, HEADER_FONT_SIZE, TextAlignmentOptions.Top, FontStyles.Bold);
+            float width = 1f;
+            var (_, background) = BuildNode(nodeContainer, node, currentElevation, node.GetNodePosition(), width, width, Color.white, true);
+            CreateTextLabel(background.transform, node.GetNodeName(), new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, -1.5f), 8f, HEADER_FONT_SIZE, TextAlignmentOptions.Top, FontStyles.Bold);
         }
 
         private void BuildStandardNode(GameObject nodeContainer, NodeData node, float currentElevation)
         {
-            nodeContainer.transform.localPosition = new Vector3(node.GetNodePosition().x, node.GetNodePosition().y + currentElevation, node.GetNodePosition().z);
 
             float textWidth = MeasureText(node.GetNodeName() ?? "", HEADER_FONT_SIZE, true);
             float width = Mathf.Max(textWidth + 3f, 6f);
             float height = 4f;
+            var (_, background) = BuildNode(nodeContainer, node, currentElevation, node.GetNodePosition(), width, height, GetNodeColor(node.Type), false);
 
-            GameObject backgroundGroup = CreateEmptyGameObject(nodeContainer.transform, "Background", Vector3.zero);
-            GameObject visualsObj = CreateNodeGameObject(node.Type, backgroundGroup.transform, width, height);
-
-            ApplyColorToHierarchy(visualsObj, GetNodeColor(node.Type));
-
-            CreateTextLabel(backgroundGroup.transform, GetStereotype(node.Type), new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, 0.5f), width, LABEL_FONT_SIZE, TextAlignmentOptions.Center);
-            CreateTextLabel(backgroundGroup.transform, node.GetNodeName(), new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, 0.5f - LINE_HEIGHT), width, HEADER_FONT_SIZE, TextAlignmentOptions.Center, FontStyles.Bold);
+            CreateTextLabel(background.transform, GetStereotype(node.Type), new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, 0.5f), width, LABEL_FONT_SIZE, TextAlignmentOptions.Center);
+            CreateTextLabel(background.transform, node.GetNodeName(), new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, 0.5f - LINE_HEIGHT), width, HEADER_FONT_SIZE, TextAlignmentOptions.Center, FontStyles.Bold);
         }
 
         private Color GetNodeColor(string nodeType)

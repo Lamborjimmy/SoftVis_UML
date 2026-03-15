@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.ConstrainedExecution;
 using Assets.Scripts.Data;
 using Assets.Scripts.Interfaces;
 using TMPro;
@@ -330,9 +329,28 @@ namespace Assets.Scripts.Visualizers
             }
             else
             {
-                visualObject = CreatePrimitive(PrimitiveType.Cube, parentTransform, "Background", Vector3.zero, Quaternion.identity, new Vector3(width, 0.2f, height));
+                visualObject = CreatePrimitive(PrimitiveType.Cube, parentTransform, "Visuals", Vector3.zero, Quaternion.identity, new Vector3(width, 0.2f, height));
             }
             return visualObject;
+        }
+        protected (Bounds bounds, GameObject backgroundGroup) BuildNode(GameObject nodeContainer, NodeData node, float elevation, Vector3 pos, float width, float height, Color color, bool useUniformScale)
+        {
+            Vector3 position = new Vector3(pos.x, pos.y + elevation, pos.z);
+            nodeContainer.transform.localPosition = position;
+
+            GameObject backgroundGroup = CreateEmptyGameObject(nodeContainer.transform, "Background", Vector3.zero);
+            string nodeType;
+            Debug.Log(node.GetNodeName());
+            if (node.Type == DiagramNodeTypes.PSEUDOSTATE)
+                nodeType = node.GetNodeName() == "initial" ? DiagramNodeTypes.INITIAL : DiagramNodeTypes.FINAL;
+            else
+                nodeType = node.Type;
+            GameObject visualsObj = CreateNodeGameObject(nodeType, backgroundGroup.transform, width, height, useUniformScale);
+
+            ApplyColorToHierarchy(visualsObj, color);
+
+            Bounds bounds = new Bounds(position, new Vector3(width, 0f, height));
+            return (bounds, backgroundGroup);
         }
         #endregion
 

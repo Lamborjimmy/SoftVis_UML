@@ -3,6 +3,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
+using UnityEditor.AnimatedValues;
 
 namespace Assets.Scripts.Visualizers
 {
@@ -95,71 +96,45 @@ namespace Assets.Scripts.Visualizers
         {
             float textWidth = MeasureText(node.GetNodeName() ?? "", HEADER_FONT_SIZE, true);
             float width = Mathf.Max(textWidth + 4f, 6f);
-            float height = 4f;
+            float height = 3f;
 
-            Vector3 position = new Vector3(node.GetNodePosition().x, node.GetNodePosition().y + currentElevation, node.GetNodePosition().z);
-            nodeContainer.transform.localPosition = position;
+            var (bounds, background) = BuildNode(nodeContainer, node, currentElevation, node.GetNodePosition(), width, height, GetLayerColor(depth, true), false);
 
-            GameObject backgroundGroup = CreateEmptyGameObject(nodeContainer.transform, "Background", Vector3.zero);
-            GameObject visualsObj = CreateNodeGameObject(node.Type, backgroundGroup.transform, width, height);
+            CreateTextLabel(background.transform, "<<component>>", new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, 0.5f), width, LABEL_FONT_SIZE, TextAlignmentOptions.Center);
+            CreateTextLabel(background.transform, node.GetNodeName(), new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, 0.5f - LINE_HEIGHT), width, HEADER_FONT_SIZE, TextAlignmentOptions.Center, FontStyles.Bold);
 
-            ApplyColorToHierarchy(visualsObj, GetLayerColor(depth, true));
-
-            CreateTextLabel(backgroundGroup.transform, "<<component>>", new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, 0.5f), width, LABEL_FONT_SIZE, TextAlignmentOptions.Center);
-            CreateTextLabel(backgroundGroup.transform, node.GetNodeName(), new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, 0.5f - LINE_HEIGHT), width, HEADER_FONT_SIZE, TextAlignmentOptions.Center, FontStyles.Bold);
-
-            return new Bounds(position, new Vector3(width, 0f, height));
+            return bounds;
         }
 
         private Bounds BuildInterfaceNode(GameObject nodeContainer, NodeData node, float currentElevation)
         {
             float width = 1.0f;
-            float height = 1.0f;
 
-            Vector3 position = new Vector3(node.GetNodePosition().x, node.GetNodePosition().y + currentElevation, node.GetNodePosition().z);
-            nodeContainer.transform.localPosition = position;
+            var (bounds, background) = BuildNode(nodeContainer, node, currentElevation, node.GetNodePosition(), width, width, Color.white, true);
 
-            GameObject backgroundGroup = CreateEmptyGameObject(nodeContainer.transform, "Background", Vector3.zero);
-            GameObject visualsObj = CreateNodeGameObject(node.Type, backgroundGroup.transform, width, height, true);
+            CreateTextLabel(background.transform, node.GetNodeName(), new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, -2.5f), Mathf.Max(width, 8f), HEADER_FONT_SIZE, TextAlignmentOptions.Top, FontStyles.Bold);
 
-            ApplyColorToHierarchy(visualsObj, Color.white);
-
-            CreateTextLabel(backgroundGroup.transform, node.GetNodeName(), new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, -2.5f), Mathf.Max(width, 8f), HEADER_FONT_SIZE, TextAlignmentOptions.Top, FontStyles.Bold);
-
-            return new Bounds(position, new Vector3(width, 0f, height));
+            return bounds;
         }
 
         private Bounds BuildPortNode(GameObject nodeContainer, NodeData node, float currentElevation)
         {
             float width = 0.75f;
-            float height = 0.75f;
 
-            Vector3 position = new Vector3(node.GetNodePosition().x, node.GetNodePosition().y + currentElevation, node.GetNodePosition().z);
-            nodeContainer.transform.localPosition = position;
-
-            GameObject backgroundGroup = CreateEmptyGameObject(nodeContainer.transform, "Background", Vector3.zero);
-            GameObject visualsObj = CreateNodeGameObject(node.Type, backgroundGroup.transform, width, height);
-
-
-            ApplyColorToHierarchy(visualsObj, Color.gray);
-            return new Bounds(position, new Vector3(width, 0f, height));
+            var (bounds, background) = BuildNode(nodeContainer, node, currentElevation, node.GetNodePosition(), width, width, Color.gray, true);
+            return bounds;
         }
 
         private Bounds BuildActorNode(GameObject nodeContainer, NodeData node, float currentElevation)
         {
             float textWidth = MeasureText(node.GetNodeName() ?? "", HEADER_FONT_SIZE, true);
+            float width = 1f;
 
-            Vector3 position = new Vector3(node.GetNodePosition().x, node.GetNodePosition().y + currentElevation, node.GetNodePosition().z);
-            nodeContainer.transform.localPosition = position;
+            var (bounds, background) = BuildNode(nodeContainer, node, currentElevation, node.GetNodePosition(), width, width, Color.white, true);
 
-            GameObject backgroundGroup = CreateEmptyGameObject(nodeContainer.transform, "Background", Vector3.zero);
-            GameObject visualsObj = CreateNodeGameObject(node.Type, backgroundGroup.transform, 1f, 1f, true);
+            CreateTextLabel(background.transform, node.GetNodeName(), new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, -2.5f), Mathf.Max(textWidth + 3f, 8f), HEADER_FONT_SIZE, TextAlignmentOptions.Top, FontStyles.Bold);
 
-            ApplyColorToHierarchy(visualsObj, Color.white);
-
-            CreateTextLabel(backgroundGroup.transform, node.GetNodeName(), new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, -2.5f), Mathf.Max(textWidth + 3f, 8f), HEADER_FONT_SIZE, TextAlignmentOptions.Top, FontStyles.Bold);
-
-            return new Bounds(position, new Vector3(1f, 0f, 1f));
+            return bounds;
         }
 
         private Color GetLayerColor(int depth, bool isContainer)

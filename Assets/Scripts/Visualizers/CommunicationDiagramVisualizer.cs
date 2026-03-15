@@ -36,19 +36,18 @@ namespace Assets.Scripts.Visualizers
         private void BuildActorNode(GameObject nodeContainer, NodeData node)
         {
             float textWidth = MeasureText(node.GetNodeName(), HEADER_FONT_SIZE, true);
-            GameObject backgroundGroup = CreateEmptyGameObject(nodeContainer.transform, "Background", Vector3.zero);
-            CreateNodeGameObject(node.Type, backgroundGroup.transform, 1f, 1f, true);
-            CreateTextLabel(backgroundGroup.transform, node.GetNodeName(), new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, 2f), textWidth + 3f, HEADER_FONT_SIZE, TextAlignmentOptions.Center, FontStyles.Bold);
+            float width = 1f;
+
+            var (_, background) = BuildNode(nodeContainer, node, Y_ELEVATION, node.GetNodePosition(), width, width, Color.white, true);
+            CreateTextLabel(background.transform, node.GetNodeName(), new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, 2f), textWidth + 3f, HEADER_FONT_SIZE, TextAlignmentOptions.Center, FontStyles.Bold);
         }
         private void BuildLifelineNode(GameObject nodeContainer, NodeData node)
         {
             float textWidth = MeasureText(node.GetNodeName(), HEADER_FONT_SIZE, true);
             float width = Mathf.Max(textWidth + 3f, 6f);
-            float height = 4f;
-            GameObject backgroundGroup = CreateEmptyGameObject(nodeContainer.transform, "Background", Vector3.zero);
-            GameObject visualsObj = CreateNodeGameObject(node.Type, backgroundGroup.transform, width, height);
-            ApplyColorToHierarchy(visualsObj, new Color(0.7f, 0.85f, 0.9f));
-            CreateTextLabel(backgroundGroup.transform, node.GetNodeName(), new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, 0), textWidth, HEADER_FONT_SIZE, TextAlignmentOptions.Center, FontStyles.Bold);
+            float height = 3f;
+            var (_, background) = BuildNode(nodeContainer, node, Y_ELEVATION, node.GetNodePosition(), width, height, Color.aquamarine, false);
+            CreateTextLabel(background.transform, node.GetNodeName(), new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, 0), textWidth, HEADER_FONT_SIZE, TextAlignmentOptions.Center, FontStyles.Bold);
         }
     }
 }

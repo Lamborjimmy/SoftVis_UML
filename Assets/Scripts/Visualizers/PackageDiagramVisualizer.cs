@@ -72,36 +72,29 @@ namespace Assets.Scripts.Visualizers
         {
             float textWidth = MeasureText(node.GetNodeName(), HEADER_FONT_SIZE, true);
             float nodeWidth = Mathf.Max(textWidth + 3f, 6f);
-            float nodeHeight = 4f;
+            float nodeHeight = 3f;
             float currentTabHeight = 1.5f;
             float totalHeight = nodeHeight + currentTabHeight;
 
-            nodeContainer.transform.localPosition = new Vector3(node.GetNodePosition().x, node.GetNodePosition().y + currentElevation, node.GetNodePosition().z + (currentTabHeight / 2f));
+            Vector3 nodePosition = new Vector3(node.GetNodePosition().x, node.GetNodePosition().y + currentElevation, node.GetNodePosition().z + (currentTabHeight / 2f));
 
-            GameObject backgroundGroup = CreateEmptyGameObject(nodeContainer.transform, "Background", Vector3.zero);
-            GameObject visualsObj = CreateNodeGameObject(node.Type, backgroundGroup.transform, nodeWidth, totalHeight);
+            var (_, background) = BuildNode(nodeContainer, node, currentElevation, nodePosition, nodeWidth, totalHeight, GetLayerColor(depth, false), false);
 
-            ConfigurePackagePrefabParts(visualsObj, nodeWidth, nodeHeight, totalHeight, currentTabHeight);
-            ApplyColorToHierarchy(visualsObj, GetLayerColor(depth, false));
+            ConfigurePackagePrefabParts(background.transform.GetChild(0).gameObject, nodeWidth, nodeHeight, totalHeight, currentTabHeight);
 
             float textZ = (nodeHeight / 2f) - (currentTabHeight / 2f) - 1.5f;
-            CreateTextLabel(backgroundGroup.transform, node.GetNodeName(), new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, textZ), nodeWidth, HEADER_FONT_SIZE, TextAlignmentOptions.Top, FontStyles.Bold);
+            CreateTextLabel(background.transform, node.GetNodeName(), new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, textZ), nodeWidth, HEADER_FONT_SIZE, TextAlignmentOptions.Top, FontStyles.Bold);
         }
 
         private void BuildStandardNode(GameObject nodeContainer, NodeData node, float currentElevation, int depth)
         {
             float textWidth = MeasureText(node.GetNodeName(), HEADER_FONT_SIZE, true);
             float nodeWidth = Mathf.Max(textWidth + 3f, 6f);
-            float nodeHeight = 4f;
+            float nodeHeight = 3f;
 
-            nodeContainer.transform.localPosition = new Vector3(node.GetNodePosition().x, node.GetNodePosition().y + currentElevation, node.GetNodePosition().z);
+            var (_, background) = BuildNode(nodeContainer, node, currentElevation, node.GetNodePosition(), nodeWidth, nodeHeight, GetLayerColor(depth, false), false);
 
-            GameObject backgroundGroup = CreateEmptyGameObject(nodeContainer.transform, "Background", Vector3.zero);
-            GameObject visualsObj = CreateNodeGameObject(node.Type, backgroundGroup.transform, nodeWidth, nodeHeight);
-
-            ApplyColorToHierarchy(visualsObj, GetLayerColor(depth, false));
-
-            CreateTextLabel(backgroundGroup.transform, node.GetNodeName(), new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, 0), nodeWidth, HEADER_FONT_SIZE, TextAlignmentOptions.Center, FontStyles.Bold);
+            CreateTextLabel(background.transform, node.GetNodeName(), new Vector3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, 0), nodeWidth, HEADER_FONT_SIZE, TextAlignmentOptions.Center, FontStyles.Bold);
         }
 
         private void ConfigurePackagePrefabParts(GameObject visualObj, float nodeWidth, float nodeHeight, float totalHeight, float currentTabHeight)

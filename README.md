@@ -97,8 +97,8 @@ This document tracks the implementation status of UML elements, nodes, edges, an
 - [x] **Swimlane Boundaries**: Dynamic calculation of bounding boxes around partitions ensuring nested elements remain safely contained within their lanes.
 - [x] **Port Snapping**: Algorithmic separation and snapping of port nodes to the physical perimeter of parent Component boundaries.
 - [x] **Dynamic Text Measuring**: Utility measuring and properly scaling text width backgrounds dynamically (e.g. for Actor/Lifeline/Use Case text widths).
+- [x] **Universal Node Prefabs**: Transitioning from procedural primitive generation to a fully Prefab-based system for all node types to unify aesthetics.
 
 ### 📝 To Implement
 
 - [ ] **Diagram Plane Scaling**: Automatic/default bounding box scaling when rendering multiple sub-graphs or disjointed graphs on the same plane.
-- [ ] **Universal Node Prefabs**: Transitioning from procedural primitive generation to a fully Prefab-based system for all node types to unify aesthetics.

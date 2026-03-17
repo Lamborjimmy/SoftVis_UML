@@ -4,8 +4,6 @@ using System.Linq;
 using Assets.Scripts.Data;
 using Assets.Scripts.Interfaces;
 using Assets.Scripts.Models;
-using UnityEditor.Experimental.GraphView;
-using UnityEngine.UI;
 
 namespace Assets.Scripts.Builders
 {
@@ -67,6 +65,7 @@ namespace Assets.Scripts.Builders
                 string parentKey = edge.From;
                 string childKey = edge.To;
                 nestedChildKeys.Add(childKey);
+                childToParent[childKey] = parentKey;
                 if (!parentToChildren.ContainsKey(parentKey))
                     parentToChildren[parentKey] = new List<NodeData>();
                 if (nodeLookup.TryGetValue(childKey, out var childNode))
@@ -85,12 +84,13 @@ namespace Assets.Scripts.Builders
                 Label = node.GetNodeName() ?? node.Key,
                 NodeType = node.Type,
                 Position = new Vec3(basePosition.X, basePosition.Y + elevation, basePosition.Z),
+                Scale = new Vec3(width, 0.2f, height),
                 BackgroundColor = color,
                 TextColor = textColor,
                 Elevation = elevation,
-                UseInformScale = useUniformScale
+                UseUniformScale = useUniformScale
             };
-            model.bounds = new BoundsData(model.Position, model.Scale);
+            model.Bounds = new BoundsData(model.Position, model.Scale);
             return model;
         }
         #endregion
@@ -186,7 +186,25 @@ namespace Assets.Scripts.Builders
             }
         }
         protected Vec3 ToVec3(UnityEngine.Vector3 v) => new Vec3(v.x, v.y, v.z);
-
+        #endregion
+        #region Helpers
+        protected float MeasureText(string text, float fontSize, bool isBold = false)
+        {
+            return TextMeasurer.MeasureWidth(text, fontSize, isBold);
+        }
+        protected TextLabelModel CreateLabel(string text, Vec3 localPos, float width, float fontSize, RGBA color, TextAlignment alignment = TextAlignment.Center, FontStyle style = FontStyle.Normal)
+        {
+            return new TextLabelModel
+            {
+                Text = text,
+                Position = localPos,
+                Width = width,
+                FontSize = fontSize,
+                Alignment = alignment,
+                Style = style,
+                Color = color
+            };
+        }
         #endregion
     }
 }

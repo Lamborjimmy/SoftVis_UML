@@ -18,14 +18,14 @@ namespace Assets.Scripts.Models
         public RGBA BackgroundColor;
         public RGBA TextColor;
 
-        public bool UseInformScale;
+        public bool UseUniformScale;
         public string ParentKey;
         public List<string> ChildKeys;
 
         public List<MemberModel> Members;
         public List<TextLabelModel> Labels;
 
-        public BoundsData bounds;
+        public BoundsData Bounds;
         public NodeModel()
         {
             ChildKeys = new List<string>();

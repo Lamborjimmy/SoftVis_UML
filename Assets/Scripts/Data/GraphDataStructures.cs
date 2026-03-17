@@ -49,7 +49,7 @@ namespace Assets.Scripts.Data
         public Dictionary<string, object> Properties;
         [JsonProperty("type")]
         public string Type;
-        public Vector3 GetNodePosition()
+        public Vector3 GetNodePosition()//TODO redo this to use Vec3 instead of unity vector
         {
             if (Properties != null && Properties.ContainsKey("position"))
             {

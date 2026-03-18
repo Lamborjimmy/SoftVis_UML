@@ -81,7 +81,7 @@ namespace Assets.Scripts.Data
         public const string CLASS_DIAGRAM = "class";
         public const string COMMUNICATION_DIAGRAM = "communication";
         public const string COMPONENT_DIAGRAM = "component";
-        public const string DEPLOYTMENT_DIAGRAM = "deployment";
+        public const string DEPLOYMENT_DIAGRAM = "deployment";
         public const string PACKAGE_DIAGRAM = "package";
         public const string STATE_DIAGRAM = "state";
         public const string USECASE_DIAGRAM = "usecase";

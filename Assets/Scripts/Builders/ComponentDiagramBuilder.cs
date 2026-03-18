@@ -164,7 +164,7 @@ namespace Assets.Scripts.Builders
         {
             float width = 0.75f;
             var pos = new Vec3(node.GetNodePosition().x, node.GetNodePosition().y + currentElevation, node.GetNodePosition().z);
-            var nodeModel = BuildNodeModel(node, pos, width, width, RGBA.Gray, RGBA.Black, currentElevation, true);
+            var nodeModel = BuildNodeModel(node, pos, width, width, RGBA.Gray, RGBA.Black, currentElevation, false);
             return nodeModel;
         }
 

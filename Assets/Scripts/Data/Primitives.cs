@@ -42,6 +42,7 @@ namespace Assets.Scripts.Data
         public static RGBA White => new RGBA(1f, 1f, 1f, 1f);
         public static RGBA Gray => new RGBA(0.2f, 0.2f, 0.2f, 1f);
         public static RGBA Green => new RGBA(0f, 1f, 0f, 1f);
+        public static RGBA Bisque => new RGBA(1f, 0.894f, 0.769f, 1f);
     }
     [Serializable]
     public struct BoundsData

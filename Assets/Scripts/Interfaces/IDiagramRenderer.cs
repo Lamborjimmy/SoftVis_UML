@@ -1,6 +1,6 @@
 using Assets.Scripts.Models;
 
-namespace Assets.Scripts.Renderers
+namespace Assets.Scripts.Interfaces
 {
     public interface IDiagramRenderer
     {

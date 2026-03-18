@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Assets.Scripts.Data;
+using Assets.Scripts.Interfaces;
 using Assets.Scripts.Models;
 using TMPro;
 using UnityEngine;

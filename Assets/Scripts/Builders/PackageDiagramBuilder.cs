@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using Assets.Scripts.Data;
 using Assets.Scripts.Models;
-using Unity.Mathematics;
 
 namespace Assets.Scripts.Builders
 {

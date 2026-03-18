@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using Assets.Scripts.Data;
 using Assets.Scripts.Models;
-using UnityEngine.ProBuilder.Shapes;
 
 namespace Assets.Scripts.Builders
 {

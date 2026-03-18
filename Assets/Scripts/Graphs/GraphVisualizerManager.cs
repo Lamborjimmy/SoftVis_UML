@@ -1,8 +1,11 @@
 using System;
 using System.Collections.Generic;
+using Assets.Scripts.Builders;
 using Assets.Scripts.Data;
 using Assets.Scripts.Interfaces;
-using Assets.Scripts.Visualizers;
+using Assets.Scripts.Models;
+using Assets.Scripts.Renderers;
+using Assets.Scripts.Renderers.Unity;
 using UnityEngine;
 
 namespace Assets.Scripts.Graphs
@@ -27,28 +30,33 @@ namespace Assets.Scripts.Graphs
         [SerializeField] private GameObject arrowPrefab;
         [SerializeField] private float verticalSpacing = 12f;
         [SerializeField] private GraphDataManager graphManager;
-        private Dictionary<string, IGraphVisualizer> visualizersByType;
-        private DefaultGraphVisualizer defaultGraphVisualizer;
+
+        private Dictionary<string, IDiagramBuilder> buildersByType;
+        private IDiagramBuilder defaultBuilder;
+        private IDiagramRenderer diagramRenderer;
+        private ITextMeasurer textMeasurer;
 
         private readonly Dictionary<string, GameObject> graphContainers = new();
         private readonly List<string> stackOrder = new();
 
         private void Awake()
         {
-            visualizersByType = new Dictionary<string, IGraphVisualizer>(StringComparer.OrdinalIgnoreCase)
+            textMeasurer = new UnityTextMeasurer();
+
+            buildersByType = new Dictionary<string, IDiagramBuilder>(StringComparer.OrdinalIgnoreCase)
             {
-                [DiagramTypes.ACTIVITY_DIAGRAM] = new ActivityDiagramVisualizer(),
-                [DiagramTypes.CLASS_DIAGRAM] = new ClassDiagramVisualizer(),
-                [DiagramTypes.COMMUNICATION_DIAGRAM] = new CommunicationDiagramVisualizer(),
-                [DiagramTypes.COMPONENT_DIAGRAM] = new ComponentDiagramVisualizer(),
-                [DiagramTypes.DEPLOYTMENT_DIAGRAM] = new DeploymentDiagramVisualizer(),
-                [DiagramTypes.PACKAGE_DIAGRAM] = new PackageDiagramVisualizer(),
-                [DiagramTypes.STATE_DIAGRAM] = new StateDiagramVisualizer(),
-                [DiagramTypes.USECASE_DIAGRAM] = new UseCaseDiagramVisualizer(),
+                [DiagramTypes.ACTIVITY_DIAGRAM] = new ActivityDiagramBuilder(textMeasurer),
+                [DiagramTypes.CLASS_DIAGRAM] = new ClassDiagramBuilder(textMeasurer),
+                [DiagramTypes.COMMUNICATION_DIAGRAM] = new CommunicationDiagramBuilder(textMeasurer),
+                [DiagramTypes.COMPONENT_DIAGRAM] = new ComponentDiagramBuilder(textMeasurer),
+                [DiagramTypes.DEPLOYMENT_DIAGRAM] = new DeploymentDiagramBuilder(textMeasurer),
+                [DiagramTypes.PACKAGE_DIAGRAM] = new PackageDiagramBuilder(textMeasurer),
+                [DiagramTypes.STATE_DIAGRAM] = new StateDiagramBuilder(textMeasurer),
+                [DiagramTypes.USECASE_DIAGRAM] = new UseCaseDiagramBuilder(textMeasurer),
             };
-            foreach (var visualizer in visualizersByType.Values)
-                visualizer.Initialize(InitializePrefabDictionary());
-            defaultGraphVisualizer = new DefaultGraphVisualizer();
+
+
+            diagramRenderer = new UnityDiagramRenderer(InitializePrefabDictionary());
         }
 
         private void OnEnable()
@@ -68,7 +76,9 @@ namespace Assets.Scripts.Graphs
 
             string diagramType = (graph.GraphType ?? "unknown").ToLowerInvariant();
 
-            IGraphVisualizer visualizer = GetVisualizer(diagramType);
+            IDiagramBuilder builder = GetBuilder(diagramType);
+
+            DiagramModel viewModel = builder.Build(graph, nodes, edges);
 
             stackOrder.Add(graph.Key);
 
@@ -78,18 +88,18 @@ namespace Assets.Scripts.Graphs
 
             graphContainers[graph.Key] = root;
 
-            visualizer.RenderGraph(graph, root, nodes, edges);
+            diagramRenderer.Render(viewModel, root);
             root.transform.position = new Vector3(0, yOffset, 0);
             Debug.Log($"Stacked & rendered {graph.Key} ({diagramType}) at y = {yOffset}");
         }
 
-        private IGraphVisualizer GetVisualizer(string diagramType)
+        private IDiagramBuilder GetBuilder(string diagramType)
         {
-            if (visualizersByType.TryGetValue(diagramType, out var vis))
-                return vis;
+            if (buildersByType.TryGetValue(diagramType, out var builder))
+                return builder;
 
-            Debug.LogWarning($"No visualizer found for type '{diagramType}' → using class visualizer as default");
-            return defaultGraphVisualizer;
+            Debug.LogWarning($"No builder found for type '{diagramType}' → using class builder as default");
+            return defaultBuilder;
         }
 
         public void RemoveGraph(string graphId)
@@ -116,6 +126,7 @@ namespace Assets.Scripts.Graphs
                 }
             }
         }
+
         private Dictionary<string, GameObject> InitializePrefabDictionary()
         {
             Dictionary<string, GameObject> dict = new Dictionary<string, GameObject>();

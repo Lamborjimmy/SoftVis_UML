@@ -162,7 +162,7 @@ namespace Assets.Scripts.Builders
                 if (positions != null && positions.ContainsKey(child.Key))
                     pos = positions[child.Key];
                 else
-                    pos = ToVec3(child.GetNodePosition());//TODO redo this to use vec3 instead of unity's vector
+                    pos = child.GetNodePosition();
 
                 float childMinX = pos.X;
                 float childMaxX = pos.X;
@@ -185,7 +185,6 @@ namespace Assets.Scripts.Builders
                 maxZ = Math.Max(maxZ, childMaxZ);
             }
         }
-        protected Vec3 ToVec3(UnityEngine.Vector3 v) => new Vec3(v.x, v.y, v.z);
         #endregion
         #region Helpers
         protected float MeasureText(string text, float fontSize, bool isBold = false)

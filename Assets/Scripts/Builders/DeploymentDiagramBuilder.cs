@@ -49,8 +49,7 @@ namespace Assets.Scripts.Builders
             float height = (maxZ - minZ) + 8f;
             float centerZ = (minZ + maxZ) / 2f;
 
-            var pos = node.GetNodePosition();
-            Vec3 position = new Vec3((minX + maxX) / 2f, pos.y + currentElevation - (Y_ELEVATION / 2f), centerZ);
+            Vec3 position = new Vec3((minX + maxX) / 2f, node.GetNodePosition().Y + currentElevation - (Y_ELEVATION / 2f), centerZ);
 
             var nodeModel = new NodeModel
             {
@@ -93,7 +92,7 @@ namespace Assets.Scripts.Builders
         private NodeModel BuildInterfaceNode(NodeData node, float currentElevation)
         {
             float width = 1f;
-            Vec3 pos = new Vec3(node.GetNodePosition().x, node.GetNodePosition().y + currentElevation, node.GetNodePosition().z);
+            Vec3 pos = new Vec3(node.GetNodePosition().X, node.GetNodePosition().Y + currentElevation, node.GetNodePosition().Z);
 
             var nodeModel = BuildNodeModel(node, pos, width, width, RGBA.White, RGBA.Black, currentElevation, true);
 
@@ -116,7 +115,7 @@ namespace Assets.Scripts.Builders
             float width = Math.Max(textWidth + 3f, 6f);
             float height = 4f;
 
-            Vec3 pos = new Vec3(node.GetNodePosition().x, node.GetNodePosition().y + currentElevation, node.GetNodePosition().z);
+            Vec3 pos = new Vec3(node.GetNodePosition().X, node.GetNodePosition().Y + currentElevation, node.GetNodePosition().Z);
             var nodeModel = BuildNodeModel(node, pos, width, height, GetNodeColor(node.Type), RGBA.Black, currentElevation, false);
 
             nodeModel.Labels.Add(CreateLabel(

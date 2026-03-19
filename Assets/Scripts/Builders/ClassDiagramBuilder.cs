@@ -33,7 +33,7 @@ namespace Assets.Scripts.Builders
         {
             int memberCount = members?.Count ?? 0;
             var (width, height) = CalculateClassDimensions(node, members, memberCount);
-            var pos = new Vec3(node.GetNodePosition().x, node.GetNodePosition().y + Y_ELEVATION, node.GetNodePosition().z);
+            var pos = new Vec3(node.GetNodePosition().X, node.GetNodePosition().Y + Y_ELEVATION, node.GetNodePosition().Z);
 
             var nodeModel = BuildNodeModel(node, pos, width, height, RGBA.Bisque, RGBA.Black, Y_ELEVATION, false);
 

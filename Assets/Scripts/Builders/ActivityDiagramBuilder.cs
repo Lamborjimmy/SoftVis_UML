@@ -28,7 +28,7 @@ namespace Assets.Scripts.Builders
             foreach (var node in nodes)
             {
                 var pos = node.GetNodePosition();
-                overriddenPositions[node.Key] = new Vec3(pos.x, pos.y, pos.z * zSpacingMultiplier);
+                overriddenPositions[node.Key] = new Vec3(pos.X, pos.Y, pos.Z * zSpacingMultiplier);
             }
 
             ApplyRankBasedSpacing(sortedNodes, edges, overriddenPositions);

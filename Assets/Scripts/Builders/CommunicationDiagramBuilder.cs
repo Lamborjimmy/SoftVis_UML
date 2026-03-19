@@ -38,7 +38,7 @@ namespace Assets.Scripts.Builders
         {
             float textWidth = MeasureText(node.GetNodeName(), HEADER_FONT_SIZE, true);
             float width = 1f;
-            Vec3 pos = new Vec3(node.GetNodePosition().x, node.GetNodePosition().y + currentElevation, node.GetNodePosition().z);
+            Vec3 pos = new Vec3(node.GetNodePosition().X, node.GetNodePosition().Y + currentElevation, node.GetNodePosition().Z);
             var nodeModel = BuildNodeModel(node, pos, width, width, RGBA.White, RGBA.Black, currentElevation, true);
             nodeModel.Labels.Add(CreateLabel(
                 node.GetNodeName(),
@@ -57,7 +57,7 @@ namespace Assets.Scripts.Builders
             float width = Math.Max(textWidth + 3f, 6f);
             float height = 3f;
 
-            Vec3 pos = new Vec3(node.GetNodePosition().x, node.GetNodePosition().y + currentElevation, node.GetNodePosition().z);
+            Vec3 pos = new Vec3(node.GetNodePosition().X, node.GetNodePosition().Y + currentElevation, node.GetNodePosition().Z);
             var nodeModel = BuildNodeModel(node, pos, width, height, RGBA.Aquamarine, RGBA.Black, currentElevation, false);
             nodeModel.Labels.Add(CreateLabel(
                 node.GetNodeName(),

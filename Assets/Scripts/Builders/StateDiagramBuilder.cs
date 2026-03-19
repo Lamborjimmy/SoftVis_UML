@@ -38,7 +38,7 @@ namespace Assets.Scripts.Builders
         private NodeModel BuildPseudostateNode(NodeData node)
         {
             float width = 1f;
-            var pos = new Vec3(node.GetNodePosition().x, node.GetNodePosition().y + Y_ELEVATION, node.GetNodePosition().z);
+            var pos = new Vec3(node.GetNodePosition().X, node.GetNodePosition().Y + Y_ELEVATION, node.GetNodePosition().Z);
             NodeData tempNode = node;
             tempNode.Type = node.GetNodeName() == "initial" ? DiagramNodeTypes.INITIAL : DiagramNodeTypes.FINAL;
 
@@ -50,7 +50,7 @@ namespace Assets.Scripts.Builders
             float textWidth = MeasureText(node.GetNodeName(), HEADER_FONT_SIZE, true);
             float nodeWidth = Math.Max(textWidth, 4f);
             float nodeHeight = 2.5f;
-            var pos = new Vec3(node.GetNodePosition().x, node.GetNodePosition().y + Y_ELEVATION, node.GetNodePosition().z);
+            var pos = new Vec3(node.GetNodePosition().X, node.GetNodePosition().Y + Y_ELEVATION, node.GetNodePosition().Z);
 
             var nodeModel = BuildNodeModel(node, pos, nodeWidth, nodeHeight, RGBA.SoftYellow, RGBA.Black, Y_ELEVATION, false);
 

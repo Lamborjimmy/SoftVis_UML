@@ -69,7 +69,7 @@ namespace Assets.Scripts.Builders
 
             Vec3 position = new Vec3((minX + maxX) / 2f, node.GetNodePosition().Y + currentElevation - (Y_ELEVATION / 2f), centerZ);
 
-            var nodeModel = BuildNodeModel(node, position, width, height, GetLayerColor(depth), RGBA.Black, 0, false);
+            var nodeModel = BuildNodeModel(node, position, width, height, GetNodeColorByDepth(depth), RGBA.Black, 0, false);
 
             float textZ = (height / 2f) - 1.5f;
             if (node.Type == DiagramNodeTypes.COMPONENT)
@@ -104,7 +104,7 @@ namespace Assets.Scripts.Builders
             float width = Math.Max(textWidth + 4f, 6f);
             float height = 3f;
             var pos = new Vec3(node.GetNodePosition().X, node.GetNodePosition().Y + currentElevation, node.GetNodePosition().Z);
-            var nodeModel = BuildNodeModel(node, pos, width, height, GetLayerColor(depth), RGBA.Black, currentElevation, false);
+            var nodeModel = BuildNodeModel(node, pos, width, height, GetNodeColorByDepth(depth), RGBA.Black, currentElevation, false);
 
             nodeModel.Labels.Add(CreateLabel(
                 "<<component>>",
@@ -174,21 +174,6 @@ namespace Assets.Scripts.Builders
 
             return nodeModel;
         }
-        private RGBA GetLayerColor(int depth)
-        {
-            RGBA[] palette = new RGBA[]
-            {
-                new RGBA(0.40f, 0.50f, 0.65f, 1f),
-                new RGBA(0.45f, 0.60f, 0.50f, 1f),
-                new RGBA(0.60f, 0.45f, 0.55f, 1f),
-                new RGBA(0.65f, 0.55f, 0.40f, 1f),
-                new RGBA(0.45f, 0.55f, 0.60f, 1f)
-            };
-
-            RGBA c = palette[depth % palette.Length];
-            return c;
-        }
-
 
         private void SnapPortsToParentPerimeter(List<NodeModel> nodeModels, Dictionary<string, string> childToParent, Dictionary<string, BoundsData> nodeBoundsDict, Dictionary<string, Vec3> nodePositions, List<EdgeData> validEdges)
         {

@@ -28,11 +28,11 @@ namespace Assets.Scripts.Builders
 
                 NodeModel nodeModel;
                 if (nesting.IsContainer(node.Key))
-                    nodeModel = BuildContainerNode(node, nesting, currentElevation);
+                    nodeModel = BuildContainerNode(node, nesting, currentElevation, depth);
                 else if (node.Type == DiagramNodeTypes.REQUIRED_INTERFACE || node.Type == DiagramNodeTypes.PROVIDED_INTERFACE)
                     nodeModel = BuildInterfaceNode(node, currentElevation);
                 else
-                    nodeModel = BuildStandardNode(node, currentElevation);
+                    nodeModel = BuildStandardNode(node, currentElevation, depth);
 
                 diagram.Nodes.Add(nodeModel);
             }
@@ -41,7 +41,7 @@ namespace Assets.Scripts.Builders
 
             return diagram;
         }
-        private NodeModel BuildContainerNode(NodeData node, NestingContext nesting, float currentElevation)
+        private NodeModel BuildContainerNode(NodeData node, NestingContext nesting, float currentElevation, int depth)
         {
             GetRecursiveBounds(node.Key, nesting.ParentToChildren, out float minX, out float maxX, out float minZ, out float maxZ);
 
@@ -51,7 +51,7 @@ namespace Assets.Scripts.Builders
 
             Vec3 position = new Vec3((minX + maxX) / 2f, node.GetNodePosition().Y + currentElevation - (Y_ELEVATION / 2f), centerZ);
 
-            var nodeModel = BuildNodeModel(node, position, width, height, GetNodeColor(node.Type), RGBA.Black, 0, false);
+            var nodeModel = BuildNodeModel(node, position, width, height, GetNodeColorByDepth(depth), RGBA.Black, 0, false);
 
             float textZ = (height / 2f) - 1.5f;
             nodeModel.Labels.Add(CreateLabel(
@@ -96,14 +96,14 @@ namespace Assets.Scripts.Builders
             return nodeModel;
         }
 
-        private NodeModel BuildStandardNode(NodeData node, float currentElevation)
+        private NodeModel BuildStandardNode(NodeData node, float currentElevation, int depth)
         {
             float textWidth = MeasureText(node.GetNodeName() ?? "", HEADER_FONT_SIZE, true);
             float width = Math.Max(textWidth + 3f, 6f);
             float height = 4f;
 
             Vec3 pos = new Vec3(node.GetNodePosition().X, node.GetNodePosition().Y + currentElevation, node.GetNodePosition().Z);
-            var nodeModel = BuildNodeModel(node, pos, width, height, GetNodeColor(node.Type), RGBA.Black, currentElevation, false);
+            var nodeModel = BuildNodeModel(node, pos, width, height, GetNodeColorByDepth(depth), RGBA.Black, currentElevation, false);
 
             nodeModel.Labels.Add(CreateLabel(
                 GetStereotype(node.Type),
@@ -127,14 +127,6 @@ namespace Assets.Scripts.Builders
 
             return nodeModel;
         }
-        private RGBA GetNodeColor(string nodeType)
-        {
-            if (nodeType == DiagramNodeTypes.NODE) return new RGBA(0.35f, 0.35f, 0.45f, 1f);
-            if (nodeType == DiagramNodeTypes.COMPONENT) return new RGBA(0.85f, 0.95f, 0.85f, 1f);
-            if (nodeType == DiagramNodeTypes.ARTIFACT) return new RGBA(0.95f, 0.95f, 0.85f, 1f);
-            return RGBA.White;
-        }
-
         private string GetStereotype(string nodeType)
         {
             if (nodeType == DiagramNodeTypes.NODE) return "<<node>>";

@@ -34,7 +34,6 @@ namespace Assets.Scripts.Builders
             ApplyRankBasedSpacing(sortedNodes, edges, overriddenPositions);
 
             var swimlaneBoundsDict = CalculateSwimlaneBounds(sortedNodes, nesting.ParentToChildren, overriddenPositions);
-            var swimlanesList = sortedNodes.Where(n => n.Type == DiagramNodeTypes.SWIMLANE).ToList();
 
             foreach (var node in sortedNodes)
             {
@@ -47,7 +46,7 @@ namespace Assets.Scripts.Builders
                 NodeModel nodeModel;
 
                 if (node.Type == DiagramNodeTypes.SWIMLANE)
-                    nodeModel = BuildSwimlaneNode(node, swimlaneBoundsDict, currentElevation, depth, swimlanesList);
+                    nodeModel = BuildSwimlaneNode(node, swimlaneBoundsDict, currentElevation, depth);
                 else if (isContainer)
                     nodeModel = BuildContainerNode(node, nesting.ParentToChildren, overriddenPositions, currentElevation, depth);
                 else if (node.Type == DiagramNodeTypes.INITIAL || node.Type == DiagramNodeTypes.FINAL)
@@ -67,7 +66,7 @@ namespace Assets.Scripts.Builders
             return diagram;
         }
 
-        private NodeModel BuildSwimlaneNode(NodeData node, Dictionary<string, (float minX, float maxX, float minZ, float maxZ)> swimlaneBoundsDict, float currentElevation, int depth, List<NodeData> swimlanesList)
+        private NodeModel BuildSwimlaneNode(NodeData node, Dictionary<string, (float minX, float maxX, float minZ, float maxZ)> swimlaneBoundsDict, float currentElevation, int depth)
         {
             var sb = swimlaneBoundsDict[node.Key];
             float width = sb.maxX - sb.minX;
@@ -76,7 +75,7 @@ namespace Assets.Scripts.Builders
 
             Vec3 position = new Vec3((sb.minX + sb.maxX) / 2f, currentElevation - (Y_ELEVATION / 2f), centerZ);
 
-            var nodeModel = BuildNodeModel(node, position, width, height, GetLayerColor(depth, swimlanesList.FindIndex(s => s.Key == node.Key)), RGBA.Black, 0, false);
+            var nodeModel = BuildNodeModel(node, position, width, height, GetNodeColorByDepth(depth), RGBA.Black, 0, false);
 
             float textZ = (height / 2f) - 1.5f;
             nodeModel.Labels.Add(CreateLabel(
@@ -116,7 +115,7 @@ namespace Assets.Scripts.Builders
 
             Vec3 basePos = overriddenPositions[node.Key];
             Vec3 position = new Vec3((minX + maxX) / 2f, basePos.Y + currentElevation - (Y_ELEVATION / 2f), centerZ);
-            var nodeModel = BuildNodeModel(node, position, width, height, GetLayerColor(depth, 0), RGBA.Black, 0, false);
+            var nodeModel = BuildNodeModel(node, position, width, height, GetNodeColorByDepth(depth), RGBA.Black, 0, false);
 
             float textZ = (height / 2f) - 1.5f;
             nodeModel.Labels.Add(CreateLabel(
@@ -296,17 +295,5 @@ namespace Assets.Scripts.Builders
 
             return swimlaneBoundsDict;
         }
-
-        private RGBA GetLayerColor(int depth, int colorOffset = 0)
-        {
-            RGBA[] palette = new RGBA[]
-            {
-                new RGBA(0.4f, 0.4f, 0.4f, 0.5f),
-                new RGBA(0.3f, 0.35f, 0.4f, 0.6f),
-                new RGBA(0.35f, 0.4f, 0.35f, 0.6f)
-            };
-            return palette[(depth + colorOffset) % palette.Length];
-        }
     }
 }
-

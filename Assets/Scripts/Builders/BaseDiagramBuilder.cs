@@ -204,6 +204,20 @@ namespace Assets.Scripts.Builders
                 Color = color
             };
         }
+        protected RGBA GetNodeColorByDepth(int depth)
+        {
+            RGBA[] palette = new RGBA[]
+            {
+                new RGBA(0.40f, 0.50f, 0.65f, 1f),
+                new RGBA(0.45f, 0.60f, 0.50f, 1f),
+                new RGBA(0.60f, 0.45f, 0.55f, 1f),
+                new RGBA(0.65f, 0.55f, 0.40f, 1f),
+                new RGBA(0.45f, 0.55f, 0.60f, 1f)
+            };
+
+            RGBA c = palette[depth % palette.Length];
+            return c;
+        }
         #endregion
     }
 }

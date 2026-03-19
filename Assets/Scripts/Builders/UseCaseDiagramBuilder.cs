@@ -31,7 +31,7 @@ namespace Assets.Scripts.Builders
 
                 NodeModel nodeModel;
                 if (nesting.IsContainer(node.Key))
-                    nodeModel = BuildContainerNode(node, nesting, currentElevation);
+                    nodeModel = BuildContainerNode(node, nesting, currentElevation, depth);
                 else if (node.Type == DiagramNodeTypes.ACTOR)
                     nodeModel = BuildActorNode(node, currentElevation);
                 else if (node.Type == DiagramNodeTypes.USECASE)
@@ -56,7 +56,7 @@ namespace Assets.Scripts.Builders
                     g => g.Select(e => nodes.FirstOrDefault(n => n.Key == e.From)?.GetNodeName() ?? "Unknown").ToList()
                 );
         }
-        private NodeModel BuildContainerNode(NodeData node, NestingContext nesting, float currentElevation)
+        private NodeModel BuildContainerNode(NodeData node, NestingContext nesting, float currentElevation, int depth)
         {
             GetRecursiveBounds(node.Key, nesting.ParentToChildren, out float minX, out float maxX, out float minZ, out float maxZ);
 
@@ -67,7 +67,7 @@ namespace Assets.Scripts.Builders
             float centerZ = (minZ + maxZ) / 2f;
 
             Vec3 position = new Vec3((minX + maxX) / 2f, node.GetNodePosition().Y + currentElevation - (Y_ELEVATION / 2f), centerZ);
-            var nodeModel = BuildNodeModel(node, position, width, height, new RGBA(0.0f, 0.2f, 0.9f, 0.8f), RGBA.Black, 0, false);
+            var nodeModel = BuildNodeModel(node, position, width, height, GetNodeColorByDepth(depth), RGBA.Black, 0, false);
 
             nodeModel.Labels.Add(CreateLabel(
                 node.GetNodeName(),

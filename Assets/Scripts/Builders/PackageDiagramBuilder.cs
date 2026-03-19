@@ -56,7 +56,7 @@ namespace Assets.Scripts.Builders
             float centerZ = (minZ + maxZ) / 2f;
 
             Vec3 position = new Vec3((minX + maxX) / 2f, node.GetNodePosition().Y + currentElevation - (Y_ELEVATION / 2f), centerZ + (currentTabHeight / 2f));
-            var nodeModel = BuildNodeModel(node, position, nodeWidth, totalHeight, GetLayerColor(depth), RGBA.Black, 0, false);
+            var nodeModel = BuildNodeModel(node, position, nodeWidth, totalHeight, GetNodeColorByDepth(depth), RGBA.Black, 0, false);
 
             float textZ = (nodeHeight / 2f) - (currentTabHeight / 2f) - 1.5f;
             nodeModel.Labels.Add(CreateLabel(
@@ -80,7 +80,7 @@ namespace Assets.Scripts.Builders
             float totalHeight = nodeHeight + currentTabHeight;
 
             Vec3 pos = new Vec3(node.GetNodePosition().X, node.GetNodePosition().Y + currentElevation, node.GetNodePosition().Z + (currentTabHeight / 2f));
-            var nodeModel = BuildNodeModel(node, pos, nodeWidth, totalHeight, GetLayerColor(depth), RGBA.Black, currentElevation, false);
+            var nodeModel = BuildNodeModel(node, pos, nodeWidth, totalHeight, GetNodeColorByDepth(depth), RGBA.Black, currentElevation, false);
 
 
             float textZ = (nodeHeight / 2f) - (currentTabHeight / 2f) - 1.5f;
@@ -104,7 +104,7 @@ namespace Assets.Scripts.Builders
             float nodeHeight = 3f;
 
             Vec3 pos = new Vec3(node.GetNodePosition().X, node.GetNodePosition().Y + currentElevation, node.GetNodePosition().Z);
-            var nodeModel = BuildNodeModel(node, pos, nodeWidth, nodeHeight, GetLayerColor(depth), RGBA.Black, currentElevation, false);
+            var nodeModel = BuildNodeModel(node, pos, nodeWidth, nodeHeight, GetNodeColorByDepth(depth), RGBA.Black, currentElevation, false);
 
             nodeModel.Labels.Add(CreateLabel(
                 node.GetNodeName(),
@@ -117,20 +117,6 @@ namespace Assets.Scripts.Builders
             ));
 
             return nodeModel;
-        }
-        private RGBA GetLayerColor(int depth)
-        {
-            RGBA[] palette = new RGBA[]
-            {
-                new RGBA(0.40f, 0.50f, 0.65f),
-                new RGBA(0.45f, 0.60f, 0.50f),
-                new RGBA(0.60f, 0.45f, 0.55f),
-                new RGBA(0.65f, 0.55f, 0.40f),
-                new RGBA(0.45f, 0.55f, 0.60f)
-            };
-
-            RGBA c = palette[depth % palette.Length];
-            return c;
         }
     }
 }

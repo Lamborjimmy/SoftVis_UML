@@ -69,19 +69,7 @@ namespace Assets.Scripts.Builders
 
             Vec3 position = new Vec3((minX + maxX) / 2f, node.GetNodePosition().Y + currentElevation - (Y_ELEVATION / 2f), centerZ);
 
-            var nodeModel = new NodeModel
-            {
-                Id = node.Key,
-                Label = node.GetNodeName() ?? node.Key,
-                NodeType = node.Type,
-                Position = position,
-                Scale = new Vec3(width, 0.2f, height),
-                BackgroundColor = GetLayerColor(depth),
-                Elevation = currentElevation,
-                UseUniformScale = false
-            };
-
-            nodeModel.Bounds = new BoundsData(position, nodeModel.Scale);
+            var nodeModel = BuildNodeModel(node, position, width, height, GetLayerColor(depth), RGBA.Black, 0, false);
 
             float textZ = (height / 2f) - 1.5f;
             if (node.Type == DiagramNodeTypes.COMPONENT)

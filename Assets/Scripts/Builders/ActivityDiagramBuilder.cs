@@ -76,20 +76,7 @@ namespace Assets.Scripts.Builders
 
             Vec3 position = new Vec3((sb.minX + sb.maxX) / 2f, currentElevation - (Y_ELEVATION / 2f), centerZ);
 
-            var nodeModel = new NodeModel
-            {
-                Id = node.Key,
-                Label = node.GetNodeName() ?? node.Key,
-                NodeType = node.Type,
-                StereotypeLabel = "<<swimlane>>",
-                Position = position,
-                Scale = new Vec3(width, 0.2f, height),
-                BackgroundColor = GetLayerColor(depth, swimlanesList.FindIndex(s => s.Key == node.Key)),
-                Elevation = currentElevation,
-                UseUniformScale = false
-            };
-
-            nodeModel.Bounds = new BoundsData(position, nodeModel.Scale);
+            var nodeModel = BuildNodeModel(node, position, width, height, GetLayerColor(depth, swimlanesList.FindIndex(s => s.Key == node.Key)), RGBA.Black, 0, false);
 
             float textZ = (height / 2f) - 1.5f;
             nodeModel.Labels.Add(CreateLabel(
@@ -129,20 +116,7 @@ namespace Assets.Scripts.Builders
 
             Vec3 basePos = overriddenPositions[node.Key];
             Vec3 position = new Vec3((minX + maxX) / 2f, basePos.Y + currentElevation - (Y_ELEVATION / 2f), centerZ);
-
-            var nodeModel = new NodeModel
-            {
-                Id = node.Key,
-                Label = node.GetNodeName() ?? node.Key,
-                NodeType = node.Type,
-                Position = position,
-                Scale = new Vec3(width, 0.2f, height),
-                BackgroundColor = GetLayerColor(depth, 0),
-                Elevation = currentElevation,
-                UseUniformScale = false
-            };
-
-            nodeModel.Bounds = new BoundsData(position, nodeModel.Scale);
+            var nodeModel = BuildNodeModel(node, position, width, height, GetLayerColor(depth, 0), RGBA.Black, 0, false);
 
             float textZ = (height / 2f) - 1.5f;
             nodeModel.Labels.Add(CreateLabel(

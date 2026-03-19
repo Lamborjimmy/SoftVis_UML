@@ -67,20 +67,7 @@ namespace Assets.Scripts.Builders
             float centerZ = (minZ + maxZ) / 2f;
 
             Vec3 position = new Vec3((minX + maxX) / 2f, node.GetNodePosition().Y + currentElevation - (Y_ELEVATION / 2f), centerZ);
-
-            var nodeModel = new NodeModel
-            {
-                Id = node.Key,
-                Label = node.GetNodeName() ?? node.Key,
-                NodeType = node.Type,
-                Position = position,
-                Scale = new Vec3(width, 0.2f, height),
-                BackgroundColor = new RGBA(0.0f, 0.2f, 0.9f, 0.8f),
-                Elevation = currentElevation,
-                UseUniformScale = false
-            };
-
-            nodeModel.Bounds = new BoundsData(position, nodeModel.Scale);
+            var nodeModel = BuildNodeModel(node, position, width, height, new RGBA(0.0f, 0.2f, 0.9f, 0.8f), RGBA.Black, 0, false);
 
             nodeModel.Labels.Add(CreateLabel(
                 node.GetNodeName(),

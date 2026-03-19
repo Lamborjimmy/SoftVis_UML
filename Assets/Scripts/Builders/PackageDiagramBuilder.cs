@@ -80,7 +80,7 @@ namespace Assets.Scripts.Builders
             float totalHeight = nodeHeight + currentTabHeight;
 
             Vec3 pos = new Vec3(node.GetNodePosition().X, node.GetNodePosition().Y + currentElevation, node.GetNodePosition().Z + (currentTabHeight / 2f));
-            var nodeModel = BuildNodeModel(node, pos, nodeWidth, totalHeight, GetNodeColorByDepth(depth), RGBA.Black, currentElevation, false);
+            var nodeModel = BuildNodeModel(node, pos, nodeWidth, totalHeight, RGBA.Khaki, RGBA.Black, currentElevation, false);
 
 
             float textZ = (nodeHeight / 2f) - (currentTabHeight / 2f) - 1.5f;

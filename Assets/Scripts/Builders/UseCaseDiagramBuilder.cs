@@ -120,7 +120,7 @@ namespace Assets.Scripts.Builders
             float ovalHeight = Math.Max(baseHeight, textHeightRequirement);
 
             var pos = new Vec3(node.GetNodePosition().X, node.GetNodePosition().Y + currentElevation, node.GetNodePosition().Z);
-            var nodeModel = BuildNodeModel(node, pos, ovalWidth, ovalHeight, RGBA.SoftRed, RGBA.Black, currentElevation, false);
+            var nodeModel = BuildNodeModel(node, pos, ovalWidth, ovalHeight, RGBA.Thistle, RGBA.Black, currentElevation, false);
 
             nodeModel.Labels.Add(CreateLabel(
                 labelText,

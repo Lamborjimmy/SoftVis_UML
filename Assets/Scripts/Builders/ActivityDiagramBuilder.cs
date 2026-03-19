@@ -135,7 +135,7 @@ namespace Assets.Scripts.Builders
         {
             float width = 1f;
             Vec3 pos = overriddenPositions[node.Key];
-            var nodeModel = BuildNodeModel(node, pos, width, width, RGBA.Black, RGBA.White, currentElevation, true);
+            var nodeModel = BuildNodeModel(node, pos, width, width, RGBA.Black, RGBA.Black, currentElevation, true);
             return nodeModel;
         }
 
@@ -143,7 +143,7 @@ namespace Assets.Scripts.Builders
         {
             float width = 1f;
             Vec3 pos = overriddenPositions[node.Key];
-            var nodeModel = BuildNodeModel(node, pos, width, width, RGBA.Green, RGBA.White, currentElevation, true);
+            var nodeModel = BuildNodeModel(node, pos, width, width, RGBA.Black, RGBA.Black, currentElevation, true);
             return nodeModel;
         }
 
@@ -152,7 +152,7 @@ namespace Assets.Scripts.Builders
             float width = 0.5f;
             float height = 3f;
             Vec3 pos = overriddenPositions[node.Key];
-            var nodeModel = BuildNodeModel(node, pos, width, height, RGBA.Black, RGBA.White, currentElevation, false);
+            var nodeModel = BuildNodeModel(node, pos, width, height, RGBA.Black, RGBA.Black, currentElevation, false);
             return nodeModel;
         }
 
@@ -162,7 +162,7 @@ namespace Assets.Scripts.Builders
             float width = Math.Max(textWidth + 2f, 3f);
             float height = 2f;
             Vec3 pos = overriddenPositions[node.Key];
-            var nodeModel = BuildNodeModel(node, pos, width, height, RGBA.Black, RGBA.White, currentElevation, false);
+            var nodeModel = BuildNodeModel(node, pos, width, height, RGBA.Lavender, RGBA.Black, currentElevation, false);
 
             nodeModel.Labels.Add(CreateLabel(
                 node.GetNodeName(),

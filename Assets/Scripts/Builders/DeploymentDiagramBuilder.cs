@@ -103,7 +103,7 @@ namespace Assets.Scripts.Builders
             float height = 4f;
 
             Vec3 pos = new Vec3(node.GetNodePosition().X, node.GetNodePosition().Y + currentElevation, node.GetNodePosition().Z);
-            var nodeModel = BuildNodeModel(node, pos, width, height, GetNodeColorByDepth(depth), RGBA.Black, currentElevation, false);
+            var nodeModel = BuildNodeModel(node, pos, width, height, RGBA.LightBlue, RGBA.Black, currentElevation, false);
 
             nodeModel.Labels.Add(CreateLabel(
                 GetStereotype(node.Type),

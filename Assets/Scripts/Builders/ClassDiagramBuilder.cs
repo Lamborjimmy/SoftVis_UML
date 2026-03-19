@@ -35,7 +35,7 @@ namespace Assets.Scripts.Builders
             var (width, height) = CalculateClassDimensions(node, members, memberCount);
             var pos = new Vec3(node.GetNodePosition().X, node.GetNodePosition().Y + Y_ELEVATION, node.GetNodePosition().Z);
 
-            var nodeModel = BuildNodeModel(node, pos, width, height, RGBA.Bisque, RGBA.Black, Y_ELEVATION, false);
+            var nodeModel = BuildNodeModel(node, pos, width, height, RGBA.SoftYellow, RGBA.Black, Y_ELEVATION, false);
 
             if (node.Type == DiagramNodeTypes.INTERFACE || node.Type == DiagramNodeTypes.ENUMERATION)
             {

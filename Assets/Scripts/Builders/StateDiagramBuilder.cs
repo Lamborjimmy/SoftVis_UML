@@ -52,7 +52,7 @@ namespace Assets.Scripts.Builders
             float nodeHeight = 2.5f;
             var pos = new Vec3(node.GetNodePosition().X, node.GetNodePosition().Y + Y_ELEVATION, node.GetNodePosition().Z);
 
-            var nodeModel = BuildNodeModel(node, pos, nodeWidth, nodeHeight, RGBA.SoftYellow, RGBA.Black, Y_ELEVATION, false);
+            var nodeModel = BuildNodeModel(node, pos, nodeWidth, nodeHeight, RGBA.MistyRose, RGBA.Black, Y_ELEVATION, false);
 
             nodeModel.Labels.Add(CreateLabel(
                 node.GetNodeName(),

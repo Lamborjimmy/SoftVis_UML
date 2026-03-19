@@ -104,7 +104,7 @@ namespace Assets.Scripts.Builders
             float width = Math.Max(textWidth + 4f, 6f);
             float height = 3f;
             var pos = new Vec3(node.GetNodePosition().X, node.GetNodePosition().Y + currentElevation, node.GetNodePosition().Z);
-            var nodeModel = BuildNodeModel(node, pos, width, height, GetNodeColorByDepth(depth), RGBA.Black, currentElevation, false);
+            var nodeModel = BuildNodeModel(node, pos, width, height, RGBA.Mint, RGBA.Black, currentElevation, false);
 
             nodeModel.Labels.Add(CreateLabel(
                 "<<component>>",

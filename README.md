@@ -50,12 +50,12 @@ This document tracks the implementation status of UML elements, nodes, edges, an
 - [x] **Swimlane Node**: Node representing a partition (swimlane) in an activity diagram.
 - [x] **Advanced Pseudostates**: Explicit nodes for `decision`/`choice`, `fork`, and `join`.
 - [x] **Lifeline Node**: Node representing an object or interacting participant in a communication diagram.
+- [x] **State Internal Behaviors**: Dedicated compartments for `entry /`, `do /`, and `exit /` actions within a state node.
 
 ### 📝 To Implement
 
 - [ ] **Parameter Node**: Sub-node representing an input parameter for a `Method Node`.
 - [ ] **Composite State Node**: State node capable of containing nested sub-states or orthogonal regions.
-- [ ] **State Internal Behaviors**: Dedicated compartments for `entry /`, `do /`, and `exit /` actions within a state node.
 
 ---
 

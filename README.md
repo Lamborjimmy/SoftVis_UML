@@ -74,15 +74,15 @@ This document tracks the implementation status of UML elements, nodes, edges, an
 - [x] **Self-associated Edges**: Loops pointing back to the source node.
 - [x] **Provides**: Connecting components to provided interfaces.
 - [x] **Control Flow / Object Flow**: Directional flow arrows routing activity step-by-step or transferring objects in Activity Diagrams.
+- [x] **Edge Labels**: General text labeling on edges for specific roles or names.
+- [x] **Multiplicity**: Source and target instance notations (e.g., `1`, `0..*`) primarily for Class diagrams.
+- [x] **Transition Labels**: Labels for state transitions specifying `[Guard]`, `Trigger`, and `/Effect`.
+- [x] **Message Labels**: Sequential numbering and text labels for messages on communication diagram links.
 
 ### 📝 To Implement
 
-- [ ] **Edge Labels**: General text labeling on edges for specific roles or names.
-- [ ] **Multiplicity**: Source and target instance notations (e.g., `1`, `0..*`) primarily for Class diagrams.
-- [ ] **Transition Labels**: Labels for state transitions specifying `[Guard]`, `Trigger`, and `/Effect`.
 - [ ] **Package Edge Notation**: Explicit stereotype labels like `«merge»`, `«import»`, `«access»`.
 - [ ] **Deployment Edge Notation**: Explicit stereotype labels like `«manifest»`, `«deploy»`.
-- [ ] **Message Labels**: Sequential numbering and text labels for messages on communication diagram links.
 
 ---
 
@@ -98,7 +98,6 @@ This document tracks the implementation status of UML elements, nodes, edges, an
 - [x] **Port Snapping**: Algorithmic separation and snapping of port nodes to the physical perimeter of parent Component boundaries.
 - [x] **Dynamic Text Measuring**: Utility measuring and properly scaling text width backgrounds dynamically (e.g. for Actor/Lifeline/Use Case text widths).
 - [x] **Universal Node Prefabs**: Transitioning from procedural primitive generation to a fully Prefab-based system for all node types to unify aesthetics.
+- [x] **Diagram Plane Scaling**: Automatic/default bounding box scaling when rendering multiple sub-graphs or disjointed graphs on the same plane.
 
 ### 📝 To Implement
-
-- [ ] **Diagram Plane Scaling**: Automatic/default bounding box scaling when rendering multiple sub-graphs or disjointed graphs on the same plane.

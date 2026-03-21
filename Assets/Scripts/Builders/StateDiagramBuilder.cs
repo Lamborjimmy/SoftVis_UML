@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Assets.Scripts.Data;
 using Assets.Scripts.Models;
 
@@ -20,20 +21,49 @@ namespace Assets.Scripts.Builders
 
             var nesting = BuildNestingHierarchy(nodes, edges);
 
+            var internalBehaviors = new HashSet<string>();
+            foreach (var node in nodes)
+            {
+                if (node.Properties != null && node.Properties.ContainsKey("behavior_type"))
+                    internalBehaviors.Add(node.Key);
+            }
+
+            var stateChildrenOnly = new Dictionary<string, List<NodeData>>();
+            foreach (var kvp in nesting.ParentToChildren)
+            {
+                var filtered = kvp.Value.Where(n => !internalBehaviors.Contains(n.Key)).ToList();
+                if (filtered.Count > 0)
+                {
+                    stateChildrenOnly[kvp.Key] = filtered;
+                }
+            }
+
             foreach (var node in nodes)
             {
                 if (node == nesting.RootDiagram) continue;
+                if (internalBehaviors.Contains(node.Key)) continue;
 
-                if (nesting.ChildToParent.TryGetValue(node.Key, out string parentKey) && nesting.RootDiagram != null && parentKey != nesting.RootDiagram.Key) continue;
+                int depth = nesting.GetDepth(node.Key);
+                float currentElevation = (depth + 1) * Y_ELEVATION;
 
+                nesting.ParentToChildren.TryGetValue(node.Key, out var allMembers);
 
-                nesting.ParentToChildren.TryGetValue(node.Key, out var members);
+                var behaviors = allMembers?.Where(m => internalBehaviors.Contains(m.Key)).ToList();
+                var childStates = allMembers?.Where(m => !internalBehaviors.Contains(m.Key)).ToList();
 
                 NodeModel nodeModel;
                 if (node.Type == DiagramNodeTypes.PSEUDOSTATE)
-                    nodeModel = BuildPseudostateNode(node);
+                {
+                    nodeModel = BuildPseudostateNode(node, currentElevation);
+                }
+                else if (childStates != null && childStates.Count > 0)
+                {
+                    nodeModel = BuildCompositeStateNode(node, stateChildrenOnly, behaviors, currentElevation, depth);
+                }
                 else
-                    nodeModel = BuildStateNode(node, members);
+                {
+                    nodeModel = BuildStateNode(node, behaviors, currentElevation);
+                }
 
                 diagram.Nodes.Add(nodeModel);
             }
@@ -43,26 +73,77 @@ namespace Assets.Scripts.Builders
             return diagram;
         }
 
-        private NodeModel BuildPseudostateNode(NodeData node)
+        private NodeModel BuildPseudostateNode(NodeData node, float currentElevation)
         {
             float width = 1f;
-            var pos = new Vec3(node.GetNodePosition().X, node.GetNodePosition().Y + Y_ELEVATION, node.GetNodePosition().Z);
+            var pos = new Vec3(node.GetNodePosition().X, node.GetNodePosition().Y + currentElevation, node.GetNodePosition().Z);
             NodeData tempNode = node;
             tempNode.Type = node.GetNodeName() == "initial" ? DiagramNodeTypes.INITIAL : DiagramNodeTypes.FINAL;
 
-            var nodeModel = BuildNodeModel(tempNode, pos, width, width, RGBA.Black, RGBA.Black, Y_ELEVATION, true);
+            return BuildNodeModel(tempNode, pos, width, width, RGBA.Black, RGBA.Black, currentElevation, true);
+        }
+
+        private NodeModel BuildCompositeStateNode(NodeData node, Dictionary<string, List<NodeData>> stateChildrenOnly, List<NodeData> behaviors, float currentElevation, int depth)
+        {
+            GetRecursiveBounds(node.Key, stateChildrenOnly, out float minX, out float maxX, out float minZ, out float maxZ);
+
+            float width = (maxX - minX) + 10f;
+            float height = (maxZ - minZ) + 8f;
+            float centerZ = (minZ + maxZ) / 2f;
+
+            Vec3 position = new Vec3((minX + maxX) / 2f, node.GetNodePosition().Y + currentElevation - (Y_ELEVATION / 2f), centerZ);
+
+            var nodeModel = BuildNodeModel(node, position, width, height, GetNodeColorByDepth(depth), RGBA.Black, 0, false);
+
+            float textZ = (height / 2f) - 1.5f;
+
+            nodeModel.Labels.Add(CreateLabel(
+                node.GetNodeName(),
+                new Vec3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, textZ),
+                width,
+                HEADER_FONT_SIZE,
+                nodeModel.TextColor,
+                TextAlignment.Center,
+                FontStyle.Bold
+            ));
+
+            if (behaviors != null)
+            {
+                foreach (var member in behaviors)
+                {
+                    textZ -= LINE_HEIGHT;
+
+                    string behaviorType = "";
+                    if (member.Properties != null && member.Properties.TryGetValue("behavior_type", out var bTypeObj))
+                        behaviorType = bTypeObj?.ToString() ?? "";
+
+                    string memberString = $"{behaviorType} / {member.GetNodeName()}";
+
+                    nodeModel.Labels.Add(CreateLabel(
+                        memberString,
+                        new Vec3(0, Y_ELEVATION + Y_ELEVATION_TEXT_OFFSET, textZ),
+                        width,
+                        LABEL_FONT_SIZE,
+                        nodeModel.TextColor,
+                        TextAlignment.Left,
+                        FontStyle.Normal
+                    ));
+                }
+            }
+
             return nodeModel;
         }
 
-        private NodeModel BuildStateNode(NodeData node, List<NodeData> members)
+        private NodeModel BuildStateNode(NodeData node, List<NodeData> behaviors, float currentElevation)
         {
-            int memberCount = members?.Count ?? 0;
+            int memberCount = behaviors?.Count ?? 0;
             float textWidth = MeasureText(node.GetNodeName(), HEADER_FONT_SIZE, true);
             float nodeHeight = memberCount > 0 ? (memberCount + 1) * LINE_HEIGHT + PADDING_Z : 2.5f;
             float nodeWidth = Math.Max(textWidth + 3f, 4f);
-            var pos = new Vec3(node.GetNodePosition().X, node.GetNodePosition().Y + Y_ELEVATION, node.GetNodePosition().Z);
 
-            var nodeModel = BuildNodeModel(node, pos, nodeWidth, nodeHeight, RGBA.MistyRose, RGBA.Black, Y_ELEVATION, false);
+            var pos = new Vec3(node.GetNodePosition().X, node.GetNodePosition().Y + currentElevation, node.GetNodePosition().Z);
+
+            var nodeModel = BuildNodeModel(node, pos, nodeWidth, nodeHeight, RGBA.MistyRose, RGBA.Black, currentElevation, false);
 
             float currentZ = (nodeHeight / 2f) - PADDING_Z / 8f;
 
@@ -76,9 +157,9 @@ namespace Assets.Scripts.Builders
                 FontStyle.Bold
             ));
 
-            if (members != null)
+            if (behaviors != null)
             {
-                foreach (var member in members)
+                foreach (var member in behaviors)
                 {
                     currentZ -= LINE_HEIGHT;
 

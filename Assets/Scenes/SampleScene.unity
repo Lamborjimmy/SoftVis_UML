@@ -756,6 +756,7 @@ MonoBehaviour:
   arrowPrefab: {fileID: 3555933927936002165, guid: c2bf0889ffebc4f9484a8880c168c35e, type: 3}
   verticalSpacing: 15
   graphManager: {fileID: 1547673504}
+  edgeTextPrefab: {fileID: 5685198523440977585, guid: cb6f5840706f74d5b92553fb7d5b8049, type: 3}
 --- !u!1 &1011499383
 GameObject:
   m_ObjectHideFlags: 0

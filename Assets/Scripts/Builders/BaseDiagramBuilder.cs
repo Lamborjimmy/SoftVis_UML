@@ -101,6 +101,7 @@ namespace Assets.Scripts.Builders
             var notNestedEdges = edges.Where(e => e.Type != DiagramEdgeTypes.NESTED).ToList();
             foreach (var edge in notNestedEdges)
             {
+
                 var edgeModel = new EdgeModel
                 {
                     Id = edge.Key,
@@ -114,6 +115,18 @@ namespace Assets.Scripts.Builders
                     StartDecorator = GetStartDecorator(edge.Type),
                     EndDecorator = GetEndDecorator(edge.Type)
                 };
+                if (edge.Properties != null)
+                {
+                    if (edge.Properties.TryGetValue("label", out var labelObj))
+                        edgeModel.LabelText = labelObj?.ToString() ?? "";
+
+                    if (edge.Properties.TryGetValue("multiplicity_source", out var multiSrcObj))
+                        edgeModel.MultiplicitySource = multiSrcObj?.ToString() ?? "";
+
+                    if (edge.Properties.TryGetValue("multiplicity_target", out var multiTgtObj))
+                        edgeModel.MultiplicityTarget = multiTgtObj?.ToString() ?? "";
+                }
+
                 result.Add(edgeModel);
             }
             return result;

@@ -29,6 +29,7 @@ namespace Assets.Scripts.Graphs
         [SerializeField] private GameObject arrowPrefab;
         [SerializeField] private float verticalSpacing = 12f;
         [SerializeField] private GraphDataManager graphManager;
+        [SerializeField] private GameObject edgeTextPrefab;
 
         private Dictionary<string, IDiagramBuilder> buildersByType;
         private IDiagramBuilder defaultBuilder;
@@ -162,6 +163,7 @@ namespace Assets.Scripts.Graphs
             dict[DiagramEdgeTypes.TRANSITIONS_TO] = arrowPrefab;
             dict[DiagramEdgeTypes.FLOWS_TO] = arrowPrefab;
             dict[DiagramEdgeTypes.OBJECT_FLOW] = arrowPrefab;
+            dict[DiagramPrefabs.EDGE_LABEL] = edgeTextPrefab;
             return dict;
         }
     }

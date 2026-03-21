@@ -18,6 +18,9 @@ namespace Assets.Scripts.Models
         public DecoratorType EndDecorator;
         public List<Vec3> Waypoints;
         public string HubGroupKey;
+        public string LabelText;
+        public string MultiplicitySource;
+        public string MultiplicityTarget;
         public EdgeModel()
         {
             Waypoints = new List<Vec3>();
@@ -25,6 +28,9 @@ namespace Assets.Scripts.Models
             LineColor = RGBA.White;
             StartDecorator = DecoratorType.None;
             EndDecorator = DecoratorType.None;
+            LabelText = string.Empty;
+            MultiplicitySource = string.Empty;
+            MultiplicityTarget = string.Empty;
         }
     }
     [Serializable]

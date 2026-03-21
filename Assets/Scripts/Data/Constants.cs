@@ -138,4 +138,8 @@ namespace Assets.Scripts.Data
         public const string INCLUDES_UML = "INCLUDES_UML";
         public const string EXTENDS_UML = "EXTENDS_UML";
     }
+    public class DiagramPrefabs
+    {
+        public const string EDGE_LABEL = "EdgeLabelPrefab";
+    }
 }

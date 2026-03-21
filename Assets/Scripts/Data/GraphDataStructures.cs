@@ -35,7 +35,7 @@ namespace Assets.Scripts.Data
         public string To;
 
         [JsonProperty("properties")]
-        public Dictionary<string, object> Propertieps;
+        public Dictionary<string, object> Properties;
         [JsonProperty("type")]
         public string Type;
     }

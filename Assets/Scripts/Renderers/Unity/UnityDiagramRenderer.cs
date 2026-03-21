@@ -239,12 +239,37 @@ namespace Assets.Scripts.Renderers.Unity
             foreach (var edge in groupedEdges)
             {
                 if (nodeGOs.TryGetValue(edge.FromId, out GameObject src))
+                {
+                    string tempLabel = edge.LabelText;
+                    string tempTgtMulti = edge.MultiplicityTarget;
+
+                    edge.LabelText = "";
+                    edge.MultiplicityTarget = "";
                     RenderEdge(hubObj.transform, src, hubObj, edge, false);
+                    edge.LabelText = tempLabel;
+                    edge.MultiplicityTarget = tempTgtMulti;
+                }
             }
 
-            RenderEdge(hubObj.transform, hubObj, targetNode, groupedEdges[0], true);
-        }
+            var edgeOut = groupedEdges[0];
 
+            string origLabel = edgeOut.LabelText;
+            string origSrcMulti = edgeOut.MultiplicitySource;
+            string origTgtMulti = edgeOut.MultiplicityTarget;
+
+            var uniqueLabels = groupedEdges.Select(e => e.LabelText).Where(l => !string.IsNullOrEmpty(l)).Distinct();
+            var uniqueTgtMultis = groupedEdges.Select(e => e.MultiplicityTarget).Where(m => !string.IsNullOrEmpty(m)).Distinct();
+
+            edgeOut.LabelText = string.Join("\n", uniqueLabels);
+            edgeOut.MultiplicityTarget = string.Join(", ", uniqueTgtMultis);
+            edgeOut.MultiplicitySource = "";
+
+            RenderEdge(hubObj.transform, hubObj, targetNode, edgeOut, true);
+
+            edgeOut.LabelText = origLabel;
+            edgeOut.MultiplicitySource = origSrcMulti;
+            edgeOut.MultiplicityTarget = origTgtMulti;
+        }
         private void RenderEdge(Transform parent, GameObject fromObj, GameObject toObj, EdgeModel edge, bool drawDecorator)
         {
             if (fromObj == toObj)
@@ -267,6 +292,8 @@ namespace Assets.Scripts.Renderers.Unity
                 if (edge.StartDecorator != DecoratorType.None)
                     AttachDecorator(edge.StartDecorator, edge.EdgeType, edgeGO.transform, startPoint, -finalDirection);
             }
+            Vector3 midPoint = (startPoint + endPoint) / 2f;
+            RenderEdgeLabels(edge, edgeGO.transform, startPoint, endPoint, midPoint);
         }
 
         private void RenderSelfLoopEdge(Transform parent, GameObject nodeObj, EdgeModel edge)
@@ -286,6 +313,8 @@ namespace Assets.Scripts.Renderers.Unity
 
             if (edge.EndDecorator != DecoratorType.None)
                 AttachDecorator(edge.EndDecorator, edge.EdgeType, edgeGO.transform, endPoint, finalDirection);
+            Vector3 midPoint = edgePoints[curveSegments / 2]; // Get the top of the loop curve
+            RenderEdgeLabels(edge, edgeGO.transform, startPoint, endPoint, midPoint);
         }
 
         private GameObject CreateEdgeGameObject(EdgeModel edge, Transform parent, Vector3 startPoint, Vector3 endPoint, Vector3[] points = null, int posCount = 2)
@@ -312,6 +341,51 @@ namespace Assets.Scripts.Renderers.Unity
             ApplyEdgeLineMaterial(lr, edge, startPoint, endPoint);
 
             return edgeGO;
+        }
+        private void RenderEdgeLabels(EdgeModel edge, Transform parent, Vector3 startPoint, Vector3 endPoint, Vector3 midPoint)
+        {
+            float yElevation = 0.35f;
+            float multiOffset = 2.5f;
+
+            if (!prefabs.TryGetValue(DiagramPrefabs.EDGE_LABEL, out GameObject labelPrefab))
+            {
+                Debug.LogError($"Missing prefab for {DiagramPrefabs.EDGE_LABEL}");
+                return;
+            }
+
+            if (!string.IsNullOrEmpty(edge.LabelText))
+            {
+                Vector3 labelPos = midPoint;
+                labelPos.y += yElevation;
+                SpawnLabelText(edge.LabelText, "Label", labelPos, labelPrefab, parent);
+            }
+
+            if (!string.IsNullOrEmpty(edge.MultiplicitySource))
+            {
+                Vector3 dirFromStart = (midPoint - endPoint).normalized;
+                Vector3 srcPos = endPoint + (dirFromStart * multiOffset);
+                srcPos.y += yElevation;
+                SpawnLabelText(edge.MultiplicitySource, "MultiSrc", srcPos, labelPrefab, parent);
+            }
+
+            if (!string.IsNullOrEmpty(edge.MultiplicityTarget))
+            {
+                Vector3 dirFromEnd = (midPoint - startPoint).normalized;
+                Vector3 tgtPos = startPoint + (dirFromEnd * multiOffset);
+                tgtPos.y += yElevation;
+                SpawnLabelText(edge.MultiplicityTarget, "MultiTgt", tgtPos, labelPrefab, parent);
+            }
+        }
+
+        private void SpawnLabelText(string text, string namePrefix, Vector3 position, GameObject prefab, Transform parent)
+        {
+            GameObject labelObj = Object.Instantiate(prefab, parent, false);
+            labelObj.name = $"{namePrefix}_{text}";
+            labelObj.transform.position = position;
+            labelObj.transform.rotation = Quaternion.Euler(90, 0, 0);
+
+            var tmp = labelObj.GetComponentInChildren<TextMeshProUGUI>();
+            if (tmp != null) tmp.text = text;
         }
 
         private void ApplyEdgeLineMaterial(LineRenderer lr, EdgeModel edge, Vector3 startPoint, Vector3 endPoint)

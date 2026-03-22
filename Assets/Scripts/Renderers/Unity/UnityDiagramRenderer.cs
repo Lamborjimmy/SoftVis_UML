@@ -19,6 +19,7 @@ namespace Softviz.UML.Renderers.Unity
         private Dictionary<string, int> edgePairCounts;
 
         private static readonly int COLOR_PROPERTY_ID = Shader.PropertyToID("_BaseColor");
+        private static readonly int COLOR_ID = Shader.PropertyToID("_Base");
 
         public UnityDiagramRenderer(Dictionary<string, GameObject> prefabs)
         {
@@ -656,6 +657,7 @@ namespace Softviz.UML.Renderers.Unity
         {
             rend.GetPropertyBlock(propertyBlock);
             propertyBlock.SetColor(COLOR_PROPERTY_ID, color);
+            propertyBlock.SetColor(COLOR_ID, color);
             rend.SetPropertyBlock(propertyBlock);
         }
 

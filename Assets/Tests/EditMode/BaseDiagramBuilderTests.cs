@@ -1,12 +1,13 @@
 using System.Collections.Generic;
 using NUnit.Framework;
 using Newtonsoft.Json.Linq;
-using Assets.Scripts.Builders;
-using Assets.Scripts.Data;
-using Assets.Scripts.Models;
-using Assets.Tests.EditMode.Helpers;
+using Softviz.UML.Builders;
+using Softviz.UML.Data;
+using Softviz.UML.Models;
+using Softviz.Tests.EditMode.Helpers;
+using Softviz.UML.Interfaces;
 
-namespace Assets.Tests.EditMode
+namespace Softviz.Tests.EditMode
 {
     public class TestableDiagramBuilder : BaseDiagramBuilder
     {

@@ -1,7 +1,7 @@
-using Assets.Scripts.Data;
+using Softviz.UML.Data;
 using System;
 using System.Collections.Generic;
-namespace Assets.Scripts.Models
+namespace Softviz.UML.Models
 {
     [Serializable]
     public class NodeModel

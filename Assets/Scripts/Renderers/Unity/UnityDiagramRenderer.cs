@@ -1,12 +1,12 @@
 using System.Collections.Generic;
 using System.Linq;
-using Assets.Scripts.Data;
-using Assets.Scripts.Interfaces;
-using Assets.Scripts.Models;
+using Softviz.UML.Data;
+using Softviz.UML.Interfaces;
+using Softviz.UML.Models;
 using TMPro;
 using UnityEngine;
 
-namespace Assets.Scripts.Renderers.Unity
+namespace Softviz.UML.Renderers.Unity
 {
     public class UnityDiagramRenderer : IDiagramRenderer
     {

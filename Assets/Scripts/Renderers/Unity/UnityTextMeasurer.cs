@@ -1,8 +1,9 @@
-using Assets.Scripts.Builders;
+using Softviz.UML.Builders;
+using Softviz.UML.Interfaces;
 using TMPro;
 using UnityEngine;
 
-namespace Assets.Scripts.Renderers.Unity
+namespace Softviz.UML.Renderers.Unity
 {
     public class UnityTextMeasurer : ITextMeasurer
     {

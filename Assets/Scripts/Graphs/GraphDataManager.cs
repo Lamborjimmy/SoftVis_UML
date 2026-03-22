@@ -5,8 +5,8 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using UnityEngine;
 using UnityEngine.Networking;
-using Assets.Scripts.Data;
-namespace Assets.Scripts.Graphs
+using Softviz.UML.Data;
+namespace Softviz.UML.Graphs
 {
 
     public class GraphDataManager : MonoBehaviour

@@ -1,13 +1,13 @@
 using System;
 using System.Collections.Generic;
-using Assets.Scripts.Builders;
-using Assets.Scripts.Data;
-using Assets.Scripts.Interfaces;
-using Assets.Scripts.Models;
-using Assets.Scripts.Renderers.Unity;
+using Softviz.UML.Builders;
+using Softviz.UML.Data;
+using Softviz.UML.Interfaces;
+using Softviz.UML.Models;
+using Softviz.UML.Renderers.Unity;
 using UnityEngine;
 
-namespace Assets.Scripts.Graphs
+namespace Softviz.UML.Graphs
 {
     public class GraphVisualizerManager : MonoBehaviour
     {

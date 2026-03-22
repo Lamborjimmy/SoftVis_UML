@@ -1,12 +1,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
-using Assets.Scripts.Builders;
-using Assets.Scripts.Data;
-using Assets.Tests.EditMode.Helpers;
-using static Assets.Tests.EditMode.Helpers.TestDataFactory;
+using Softviz.UML.Builders;
+using Softviz.UML.Data;
+using Softviz.Tests.EditMode.Helpers;
+using static Softviz.Tests.EditMode.Helpers.TestDataFactory;
 
-namespace Assets.Tests.EditMode
+namespace Softviz.Tests.EditMode
 {
     public class ActivityDiagramBuilderTests
     {

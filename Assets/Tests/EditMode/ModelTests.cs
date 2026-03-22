@@ -1,8 +1,8 @@
 using NUnit.Framework;
-using Assets.Scripts.Data;
-using Assets.Scripts.Models;
+using Softviz.UML.Data;
+using Softviz.UML.Models;
 
-namespace Assets.Tests.EditMode
+namespace Softviz.Tests.EditMode
 {
     public class DiagramModelTests
     {

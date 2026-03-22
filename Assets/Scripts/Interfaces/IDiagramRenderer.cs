@@ -1,6 +1,6 @@
-using Assets.Scripts.Models;
+using Softviz.UML.Models;
 
-namespace Assets.Scripts.Interfaces
+namespace Softviz.UML.Interfaces
 {
     public interface IDiagramRenderer
     {

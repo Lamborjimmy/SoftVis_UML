@@ -1,6 +1,6 @@
-using Assets.Scripts.Builders;
+using Softviz.UML.Interfaces;
 
-namespace Assets.Tests.EditMode.Helpers
+namespace Softviz.Tests.EditMode.Helpers
 {
     public class MockTextMeasurer : ITextMeasurer
     {

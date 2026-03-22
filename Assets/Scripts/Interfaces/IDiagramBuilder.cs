@@ -1,8 +1,8 @@
 using System.Collections.Generic;
-using Assets.Scripts.Data;
-using Assets.Scripts.Models;
+using Softviz.UML.Data;
+using Softviz.UML.Models;
 
-namespace Assets.Scripts.Interfaces
+namespace Softviz.UML.Interfaces
 {
     public interface IDiagramBuilder
     {

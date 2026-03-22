@@ -1,9 +1,9 @@
 using System.Collections.Generic;
 using NUnit.Framework;
 using Newtonsoft.Json.Linq;
-using Assets.Scripts.Data;
+using Softviz.UML.Data;
 
-namespace Assets.Tests.EditMode
+namespace Softviz.Tests.EditMode
 {
     public class NodeDataTests
     {

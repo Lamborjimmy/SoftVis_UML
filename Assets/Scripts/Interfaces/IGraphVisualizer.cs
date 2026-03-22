@@ -1,7 +1,7 @@
 using System.Collections.Generic;
-using Assets.Scripts.Data;
+using Softviz.UML.Data;
 using UnityEngine;
-namespace Assets.Scripts.Interfaces
+namespace Softviz.UML.Interfaces
 {
     public interface IGraphVisualizer
     {

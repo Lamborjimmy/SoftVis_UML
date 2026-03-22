@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
-using Assets.Scripts.Data;
-using Assets.Scripts.Models;
-
-namespace Assets.Scripts.Builders
+using Softviz.UML.Data;
+using Softviz.UML.Models;
+using Softviz.UML.Interfaces;
+namespace Softviz.UML.Builders
 {
     public class PackageDiagramBuilder : BaseDiagramBuilder
     {

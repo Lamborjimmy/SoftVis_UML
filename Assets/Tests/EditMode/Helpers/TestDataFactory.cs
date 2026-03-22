@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
-using Assets.Scripts.Data;
+using Softviz.UML.Data;
 
-namespace Assets.Tests.EditMode.Helpers
+namespace Softviz.Tests.EditMode.Helpers
 {
     public static class TestDataFactory
     {

@@ -1,71 +1,74 @@
 using System.Collections.Generic;
-using Assets.Scripts.Data;
-using Assets.Scripts.Graphs;
+using Softviz.UML.Data;
+using Softviz.UML.Graphs;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class GraphSelectionUI : MonoBehaviour
+namespace Softviz.UML.UI
 {
-    [SerializeField] private GameObject graphListElementPrefab;
-    [SerializeField] private Transform graphListElementParent;
-    [SerializeField] private GraphDataManager graphDataManager;
-    [SerializeField] private GraphVisualizerManager graphVisualizerManager;
-    private List<string> visualizedGraphIds = new List<string>();
-    private Dictionary<string, TextMeshProUGUI> uiLabels = new Dictionary<string, TextMeshProUGUI>();
-    private void Start()
+    public class GraphSelectionUI : MonoBehaviour
     {
-        graphDataManager.OnGraphsListed += HandleGraphsListed;
-        graphDataManager.OnGraphTypeSet += HandleGraphTypeSet;
-        graphDataManager.ListGraphs();
-    }
-    private void OnDestroy()
-    {
-        graphDataManager.OnGraphsListed -= HandleGraphsListed;
-    }
-    private void HandleGraphTypeSet(GraphMetadata graph)
-    {
-        if (uiLabels.TryGetValue(graph.Key, out TextMeshProUGUI label))
-            label.text = $"ID: {graph.Key} ({graph.GraphType})";
-    }
-    private void HandleGraphsListed(List<GraphMetadata> graphs)
-    {
-        foreach (var g in graphs)
+        [SerializeField] private GameObject graphListElementPrefab;
+        [SerializeField] private Transform graphListElementParent;
+        [SerializeField] private GraphDataManager graphDataManager;
+        [SerializeField] private GraphVisualizerManager graphVisualizerManager;
+        private List<string> visualizedGraphIds = new List<string>();
+        private Dictionary<string, TextMeshProUGUI> uiLabels = new Dictionary<string, TextMeshProUGUI>();
+        private void Start()
         {
-            GameObject obj = Instantiate(graphListElementPrefab, graphListElementParent);
-            var buttonComponent = obj.GetComponentInChildren<Button>();
-            var textComponent = obj.GetComponentInChildren<TextMeshProUGUI>();
-            textComponent.text = $"ID: {g.Key}";
-            uiLabels[g.Key] = textComponent;
-            var buttonTextComponent = buttonComponent.GetComponentInChildren<TextMeshProUGUI>();
-            var buttonImage = buttonComponent.GetComponent<Image>();
-            buttonComponent.onClick.AddListener(() =>
-                HandleButtonClick(g, buttonTextComponent, buttonImage));
+            graphDataManager.OnGraphsListed += HandleGraphsListed;
+            graphDataManager.OnGraphTypeSet += HandleGraphTypeSet;
+            graphDataManager.ListGraphs();
         }
-    }
-    private void HandleButtonClick(GraphMetadata graph, TextMeshProUGUI btnText, Image btnImage)
-    {
-        string key = graph.Key;
-        if (!visualizedGraphIds.Contains(key))
+        private void OnDestroy()
         {
-            visualizedGraphIds.Add(key);
-            graphDataManager.FetchFullGraph(graph);
-
-            btnText.text = "Remove";
-            btnImage.color = Color.red;
-
-            Debug.Log($"Visualizing graph: {key}");
+            graphDataManager.OnGraphsListed -= HandleGraphsListed;
         }
-        else
+        private void HandleGraphTypeSet(GraphMetadata graph)
         {
-            visualizedGraphIds.Remove(key);
+            if (uiLabels.TryGetValue(graph.Key, out TextMeshProUGUI label))
+                label.text = $"ID: {graph.Key} ({graph.GraphType})";
+        }
+        private void HandleGraphsListed(List<GraphMetadata> graphs)
+        {
+            foreach (var g in graphs)
+            {
+                GameObject obj = Instantiate(graphListElementPrefab, graphListElementParent);
+                var buttonComponent = obj.GetComponentInChildren<Button>();
+                var textComponent = obj.GetComponentInChildren<TextMeshProUGUI>();
+                textComponent.text = $"ID: {g.Key}";
+                uiLabels[g.Key] = textComponent;
+                var buttonTextComponent = buttonComponent.GetComponentInChildren<TextMeshProUGUI>();
+                var buttonImage = buttonComponent.GetComponent<Image>();
+                buttonComponent.onClick.AddListener(() =>
+                    HandleButtonClick(g, buttonTextComponent, buttonImage));
+            }
+        }
+        private void HandleButtonClick(GraphMetadata graph, TextMeshProUGUI btnText, Image btnImage)
+        {
+            string key = graph.Key;
+            if (!visualizedGraphIds.Contains(key))
+            {
+                visualizedGraphIds.Add(key);
+                graphDataManager.FetchFullGraph(graph);
 
-            graphVisualizerManager.RemoveGraph(key);
+                btnText.text = "Remove";
+                btnImage.color = Color.red;
 
-            btnText.text = "Visualize";
-            btnImage.color = Color.white;
+                Debug.Log($"Visualizing graph: {key}");
+            }
+            else
+            {
+                visualizedGraphIds.Remove(key);
 
-            Debug.Log($"Removed graph: {key}");
+                graphVisualizerManager.RemoveGraph(key);
+
+                btnText.text = "Visualize";
+                btnImage.color = Color.white;
+
+                Debug.Log($"Removed graph: {key}");
+            }
         }
     }
 }

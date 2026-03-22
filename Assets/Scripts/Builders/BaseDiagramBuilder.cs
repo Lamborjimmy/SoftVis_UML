@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Assets.Scripts.Data;
-using Assets.Scripts.Interfaces;
-using Assets.Scripts.Models;
+using Softviz.UML.Data;
+using Softviz.UML.Interfaces;
+using Softviz.UML.Models;
 
-namespace Assets.Scripts.Builders
+namespace Softviz.UML.Builders
 {
     public abstract class BaseDiagramBuilder : IDiagramBuilder
     {

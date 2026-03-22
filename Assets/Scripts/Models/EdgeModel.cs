@@ -1,7 +1,7 @@
-using Assets.Scripts.Data;
+using Softviz.UML.Data;
 using System.Collections.Generic;
 using System;
-namespace Assets.Scripts.Models
+namespace Softviz.UML.Models
 {
     [Serializable]
     public class EdgeModel

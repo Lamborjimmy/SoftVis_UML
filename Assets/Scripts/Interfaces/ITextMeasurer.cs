@@ -1,4 +1,4 @@
-namespace Assets.Scripts.Builders
+namespace Softviz.UML.Interfaces
 {
     public interface ITextMeasurer
     {

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Assets.Scripts.Data
+namespace Softviz.UML.Data
 {
     [Serializable]
     public class GraphMetadata

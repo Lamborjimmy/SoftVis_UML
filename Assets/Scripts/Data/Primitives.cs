@@ -1,5 +1,5 @@
 using System;
-namespace Assets.Scripts.Data
+namespace Softviz.UML.Data
 {
     [Serializable]
     public struct Vec3

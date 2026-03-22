@@ -1,4 +1,4 @@
-namespace Assets.Scripts.Data
+namespace Softviz.UML.Data
 {
     public class APIDefinitions
     {

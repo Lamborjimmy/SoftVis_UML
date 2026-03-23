@@ -1,14 +1,13 @@
 {
-  "name": "SoftViz.Tests.EditMode",
+  "name": "SoftViz.Tests.PlayMode",
   "rootNamespace": "",
   "references": [
     "UnityEngine.TestRunner",
     "UnityEditor.TestRunner",
-    "SoftVis.Runtime"
+    "SoftVis.Runtime",
+    "Unity.TextMeshPro"
   ],
-  "includePlatforms": [
-    "Editor"
-  ],
+  "includePlatforms": [],
   "excludePlatforms": [],
   "allowUnsafeCode": false,
   "overrideReferences": true,
